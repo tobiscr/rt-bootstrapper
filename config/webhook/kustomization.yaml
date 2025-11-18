@@ -1,0 +1,21 @@
+resources:
+- manifests.yaml
+- service.yaml
+
+configurations:
+- kustomizeconfig.yaml
+
+patches:
+  - patch: |-
+      - op: add
+        path: /webhooks/0/namespaceSelector
+        value:
+          matchLabels:
+            operator.kyma-project.io/registry: restricted
+      - op: add
+        path: /webhooks/0/objectSelector
+        value:
+          matchLabels:
+            operator.kyma-project.io/registry: restricted
+    target:
+      kind: MutatingWebhookConfiguration
