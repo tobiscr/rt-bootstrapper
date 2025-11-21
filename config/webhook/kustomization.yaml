@@ -11,11 +11,13 @@ patches:
         path: /webhooks/0/namespaceSelector
         value:
           matchLabels:
-            operator.kyma-project.io/registry: restricted
+            rt-cfg.kyma-project.io/alter-img-registry: true
+            rt-cfg.kyma-project.io/set-pull-secret: true
       - op: add
         path: /webhooks/0/objectSelector
         value:
           matchLabels:
-            operator.kyma-project.io/registry: restricted
+            rt-cfg.kyma-project.io/alter-img-registry: true
+            rt-cfg.kyma-project.io/set-pull-secret: true
     target:
       kind: MutatingWebhookConfiguration

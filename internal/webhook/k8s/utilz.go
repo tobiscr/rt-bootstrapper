@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func ReplacePodImageRegistry(image string, registry string) string {
+func AlterPodImageRegistry(image string, registry string) string {
 	data := strings.Split(image, "/")
 
 	if len(data) == 1 {

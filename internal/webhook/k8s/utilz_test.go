@@ -77,7 +77,7 @@ func TestReplaceImageRegistry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := k8s.ReplacePodImageRegistry(tt.image, tt.registry)
+			result := k8s.AlterPodImageRegistry(tt.image, tt.registry)
 			if result != tt.expected {
 				t.Errorf("ReplaceImageRegistry(%q, %q) = %q; want %q", tt.image, tt.registry, result, tt.expected)
 			}

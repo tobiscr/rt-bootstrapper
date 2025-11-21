@@ -17,67 +17,67 @@ limitations under the License.
 package v1
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	testRegistryName = "test-registry"
+	testPullSecret   = "test-pull-secret"
+)
+
+func getTestPod(labels map[string]string) *corev1.Pod {
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: labels,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Image: "test/me/plz:now",
+				},
+				{
+					Image: "test/this/too:plz",
+				},
+			},
+		},
+	}
+}
+
 var _ = Describe("Pod Webhook", func() {
-	var (
-		obj       *corev1.Pod
-		oldObj    *corev1.Pod
-		defaulter podCustomDefaulter
-	)
-
-	BeforeEach(func() {
-		obj = &corev1.Pod{}
-		oldObj = &corev1.Pod{}
-		defaulter = podCustomDefaulter{}
-		Expect(defaulter).NotTo(BeNil(), "Expected defaulter to be initialized")
-		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
-		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
-		// TODO (user): Add any setup logic common to all tests
-	})
-
-	AfterEach(func() {
-		// TODO (user): Add any teardown logic common to all tests
-	})
+	var defaulter = newPodCustomDefaulter(testRegistryName, testPullSecret)
 
 	Context("When creating Pod under Defaulting Webhook", func() {
-		// TODO (user): Add logic for defaulting webhooks
-		// Example:
-		// It("Should apply defaults when a required field is empty", func() {
-		//     By("simulating a scenario where defaults should be applied")
-		//     obj.SomeFieldWithDefault = ""
-		//     By("calling the Default method to apply defaults")
-		//     defaulter.Default(ctx, obj)
-		//     By("checking that the default values are set")
-		//     Expect(obj.SomeFieldWithDefault).To(Equal("default_value"))
-		// })
-	})
+		It("Should alter image registry", func() {
+			By(fmt.Sprintf("adding '%s' label", LabeAlterImgRegistry))
+			pod := getTestPod(map[string]string{LabeAlterImgRegistry: "true"})
+			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 
-	Context("When creating or updating Pod under Validating Webhook", func() {
-		// TODO (user): Add logic for validating webhooks
-		// Example:
-		// It("Should deny creation if a required field is missing", func() {
-		//     By("simulating an invalid creation scenario")
-		//     obj.SomeRequiredField = ""
-		//     Expect(validator.ValidateCreate(ctx, obj)).Error().To(HaveOccurred())
-		// })
-		//
-		// It("Should admit creation if all required fields are present", func() {
-		//     By("simulating an invalid creation scenario")
-		//     obj.SomeRequiredField = "valid_value"
-		//     Expect(validator.ValidateCreate(ctx, obj)).To(BeNil())
-		// })
-		//
-		// It("Should validate updates correctly", func() {
-		//     By("simulating a valid update scenario")
-		//     oldObj.SomeRequiredField = "updated_value"
-		//     obj.SomeRequiredField = "updated_value"
-		//     Expect(validator.ValidateUpdate(ctx, oldObj, obj)).To(BeNil())
-		// })
-	})
+			By("calling the Default method to alter registry image")
+			defaulter.Default(ctx, pod)
 
+			By("checking that the image was altered")
+			for _, container := range pod.Spec.Containers {
+				Expect(container.Image).Should(HavePrefix(testRegistryName))
+			}
+		})
+		It("Should add image pull secret", func() {
+			By(fmt.Sprintf("adding '%s' label", LabeSetPullSecret))
+			pod := getTestPod(map[string]string{LabeSetPullSecret: "true"})
+			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
+
+			By("calling the Default method to add pull secret")
+			defaulter.Default(ctx, pod)
+
+			By(fmt.Sprintf("checking that the pod's image pull secrets contain '%s'", testPullSecret))
+			Expect(pod.Spec.ImagePullSecrets).Should(ContainElement(
+				corev1.LocalObjectReference{Name: testPullSecret},
+			))
+		})
+	})
 })

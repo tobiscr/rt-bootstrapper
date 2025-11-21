@@ -31,17 +31,11 @@ import (
 var podlog = logf.Log.WithName("pod-resource")
 
 // SetupPodWebhookWithManager registers the webhook for Pod in the manager.
-func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, imagePullSecretName string) error {
-	defaulter1 := BuildPodDefaulterAlterImageRegistry(registryName)
-	defaulter2 := BuildPodDefaulterSetImagePullSecrets(imagePullSecretName)
+func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, pullSecret string) error {
+	defaulter := newPodCustomDefaulter(registryName, pullSecret)
 
 	return ctrl.NewWebhookManagedBy(mgr).For(&corev1.Pod{}).
-		WithDefaulter(&podCustomDefaulter{
-			defaulters: []func(*corev1.Pod){
-				defaulter1,
-				defaulter2,
-			},
-		}).
+		WithDefaulter(&defaulter).
 		Complete()
 }
 
@@ -54,6 +48,18 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, imagePull
 // as it is used only for temporary operations and does not need to be deeply copied.
 type podCustomDefaulter struct {
 	defaulters []func(*corev1.Pod)
+}
+
+func newPodCustomDefaulter(registryName string, pullSecret string) podCustomDefaulter {
+	defaulter1 := BuildPodDefaulterAlterImgRegistry(registryName)
+	defaulter2 := BuildPodDefaulterAddImagePullSecrets(pullSecret)
+
+	return podCustomDefaulter{
+		defaulters: []func(*corev1.Pod){
+			defaulter1,
+			defaulter2,
+		},
+	}
 }
 
 var _ webhook.CustomDefaulter = &podCustomDefaulter{}
