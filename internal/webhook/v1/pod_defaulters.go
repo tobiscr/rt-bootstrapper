@@ -16,10 +16,6 @@ const (
 
 func BuildPodDefaulterAlterImgRegistry(registryName string) PodDefaulter {
 	return func(p *corev1.Pod) {
-		if value, found := p.Labels[LabeAlterImgRegistry]; !found || value != "true" {
-			return
-		}
-
 		for i := range p.Spec.Containers {
 			p.Spec.Containers[i].Image = k8s.AlterPodImageRegistry(p.Spec.Containers[i].Image, registryName)
 		}
@@ -28,10 +24,6 @@ func BuildPodDefaulterAlterImgRegistry(registryName string) PodDefaulter {
 
 func BuildPodDefaulterAddImagePullSecrets(secretName string) PodDefaulter {
 	return func(p *corev1.Pod) {
-		if value, found := p.Labels[LabeSetPullSecret]; !found || value != "true" {
-			return
-		}
-
 		imgPullSecret := corev1.LocalObjectReference{Name: secretName}
 		if slices.Contains(p.Spec.ImagePullSecrets, imgPullSecret) {
 			return

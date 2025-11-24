@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright 2025.
 
@@ -43,12 +40,6 @@ const metricsServiceName = "rt-bootstrapper-controller-manager-metrics-service"
 
 // metricsRoleBindingName is the name of the RBAC that will be created to allow get the metrics data
 const metricsRoleBindingName = "rt-bootstrapper-metrics-binding"
-
-var (
-	dockerServer   = os.Getenv("RT_BOOTSTRAPPER_DOCKER_SERVER")
-	dockerPassword = os.Getenv("RT_BOOTSTRAPPER_DOCKER_PASSWORD")
-	dockerUsername = os.Getenv("RT_BOOTSTRAPPER_DOCKER_USERNAME")
-)
 
 var _ = Describe("Manager", Ordered, func() {
 	var controllerPodName string
@@ -292,13 +283,26 @@ var _ = Describe("Manager", Ordered, func() {
 			Eventually(verifyCAInjection).Should(Succeed())
 		})
 
-		// +kubebuilder:scaffold:e2e-webhooks-checks
+		It("should alter the image name", func() {
+			By("applying the deployment in labeled namespace")
+			cmd := exec.Command("kubectl", "apply", "-f", "./test/e2e/testdata")
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
 
-		It("should override the image name", func() {
-			By("applying the deployment with the labeled template spec")
-
+			By("waiting on the deployment to run in labeled namespace")
+			verifyDeployment := func(g Gomega) {
+				cmd := exec.Command("kubectl", "get", "pods",
+					"pause",
+					"-o", "jsonpath={.status.phase}",
+					"-n", "test")
+				output, err := utils.Run(cmd)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(output).To(Equal("Succeeded"), "pause pod in wrong status")
+			}
+			Eventually(verifyDeployment).Should(Succeed())
 		})
 
+		// +kubebuilder:scaffold:e2e-webhooks-checks
 	})
 })
 

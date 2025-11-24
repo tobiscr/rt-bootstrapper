@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright 2025.
 
@@ -58,10 +55,10 @@ func TestE2E(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 
-//	By("validating environmet variales")
-//	Expect(dockerServer).NotTo(BeEmpty(), "credentials partially empty")
-//	Expect(dockerPassword).NotTo(BeEmpty(), "credentials partially empty")
-//	Expect(dockerUsername).NotTo(BeEmpty(), "credentials partially empty")
+	//	By("validating environmet variales")
+	//	Expect(dockerServer).NotTo(BeEmpty(), "credentials partially empty")
+	//	Expect(dockerPassword).NotTo(BeEmpty(), "credentials partially empty")
+	//	Expect(dockerUsername).NotTo(BeEmpty(), "credentials partially empty")
 
 	skipCertManagerUninstall = false
 

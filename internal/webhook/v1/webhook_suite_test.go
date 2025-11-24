@@ -107,7 +107,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = SetupPodWebhookWithManager(mgr, "localhost:5000", "test-me-plz")
+	err = SetupPodWebhookWithManager(mgr, "ghcr.io", "test-me-plz")
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:webhook
