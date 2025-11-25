@@ -55,11 +55,6 @@ func TestE2E(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 
-	//	By("validating environmet variales")
-	//	Expect(dockerServer).NotTo(BeEmpty(), "credentials partially empty")
-	//	Expect(dockerPassword).NotTo(BeEmpty(), "credentials partially empty")
-	//	Expect(dockerUsername).NotTo(BeEmpty(), "credentials partially empty")
-
 	skipCertManagerUninstall = false
 
 	By("building the manager(Operator) image")

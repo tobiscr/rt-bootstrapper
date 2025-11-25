@@ -289,17 +289,24 @@ var _ = Describe("Manager", Ordered, func() {
 			_, err := utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("waiting on the deployment to run in labeled namespace")
-			verifyDeployment := func(g Gomega) {
-				cmd := exec.Command("kubectl", "get", "pods",
-					"pause",
-					"-o", "jsonpath={.status.phase}",
-					"-n", "test")
-				output, err := utils.Run(cmd)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(output).To(Equal("Succeeded"), "pause pod in wrong status")
-			}
-			Eventually(verifyDeployment).Should(Succeed())
+			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause",
+				"--for", "condition=Available",
+				"--namespace", "test",
+				"--timeout", "20s",
+			)
+
+			_, err = utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "get", "pod",
+				"-n", "test",
+				"-o", "jsonpath={.items[0].spec.containers[0]}")
+			output, err := utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			container, err := utils.ToContainers(output)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(container.Image).ShouldNot(HavePrefix("replace.me"))
 		})
 
 		// +kubebuilder:scaffold:e2e-webhooks-checks

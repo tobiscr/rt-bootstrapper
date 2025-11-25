@@ -19,10 +19,14 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2" // nolint:revive,staticcheck
 )
@@ -235,4 +239,13 @@ func UncommentCode(filename, target, prefix string) error {
 	}
 
 	return nil
+}
+
+func ToContainers(s string) (*corev1.Container, error) {
+	slog.Default().Info("converting", "value", s)
+	r := strings.NewReader(s)
+	var out corev1.Container
+
+	err := json.NewDecoder(r).Decode(&out)
+	return &out, err
 }

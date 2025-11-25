@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -31,10 +32,11 @@ const (
 	testPullSecret   = "test-pull-secret"
 )
 
-func getTestPod(labels map[string]string) *corev1.Pod {
+func getTestPod(labels, annotations map[string]string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: labels,
+			Annotations: annotations,
+			Labels:      labels,
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
@@ -50,12 +52,25 @@ func getTestPod(labels map[string]string) *corev1.Pod {
 }
 
 var _ = Describe("Pod Webhook", func() {
-	var defaulter = newPodCustomDefaulter(testRegistryName, testPullSecret)
 
 	Context("When creating Pod under Defaulting Webhook", func() {
+		d1 := BuildPodDefaulterAddImagePullSecrets(testPullSecret)
+		d2 := BuildPodDefaulterAlterImgRegistry(testRegistryName)
+
+		var defaulter = podCustomDefaulter{
+			defaulters: []func(*corev1.Pod, map[string]string, map[string]string) error{
+				d1, d2,
+			},
+			GetNamespace: func(_ context.Context, name string) (*corev1.Namespace, error) {
+				return &corev1.Namespace{}, nil
+			},
+		}
+
 		It("Should alter image registry", func() {
-			By(fmt.Sprintf("adding '%s' label", LabeAlterImgRegistry))
-			pod := getTestPod(map[string]string{LabeAlterImgRegistry: "true"})
+			By(fmt.Sprintf("adding '%s' annotation", AnnotationAlterImgRegistry))
+			pod := getTestPod(
+				map[string]string{LabelRtBootstrapperCfg: "true"},
+				map[string]string{AnnotationAlterImgRegistry: "true"})
 			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 
 			By("calling the Default method to alter registry image")
@@ -66,9 +81,12 @@ var _ = Describe("Pod Webhook", func() {
 				Expect(container.Image).Should(HavePrefix(testRegistryName))
 			}
 		})
+
 		It("Should add image pull secret", func() {
-			By(fmt.Sprintf("adding '%s' label", LabeSetPullSecret))
-			pod := getTestPod(map[string]string{LabeSetPullSecret: "true"})
+			By(fmt.Sprintf("adding '%s' label", AnnotationSetPullSecret))
+			pod := getTestPod(
+				map[string]string{LabelRtBootstrapperCfg: "true"},
+				map[string]string{AnnotationSetPullSecret: "true"})
 			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 
 			By("calling the Default method to add pull secret")

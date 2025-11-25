@@ -19,6 +19,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"log/slog"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -91,6 +92,8 @@ func main() {
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
+
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 

@@ -19,20 +19,38 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// log is for logging in this package.
-var podlog = logf.Log.WithName("pod-resource")
-
 // SetupPodWebhookWithManager registers the webhook for Pod in the manager.
 func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, pullSecret string) error {
-	defaulter := newPodCustomDefaulter(registryName, pullSecret)
+
+	d1 := BuildPodDefaulterAddImagePullSecrets(pullSecret)
+	d2 := BuildPodDefaulterAlterImgRegistry(registryName)
+
+	getNamespace := func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		var result corev1.Namespace
+		if err := mgr.GetClient().Get(ctx, client.ObjectKey{
+			Name: name,
+		}, &result); err != nil {
+			return nil, err
+		}
+		return &result, nil
+	}
+
+	defaulter := podCustomDefaulter{
+		defaulters: []func(*corev1.Pod, map[string]string, map[string]string) error{
+			d1,
+			d2,
+		},
+		GetNamespace: getNamespace,
+	}
 
 	return ctrl.NewWebhookManagedBy(mgr).For(&corev1.Pod{}).
 		WithDefaulter(&defaulter).
@@ -41,31 +59,24 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, pullSecre
 
 // +kubebuilder:webhook:path=/mutate--v1-pod,mutating=true,failurePolicy=fail,sideEffects=None,groups="",resources=pods,verbs=create,versions=v1,name=mpod-v1.kb.io,admissionReviewVersions=v1
 
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
+
 // podCustomDefaulter struct is responsible for setting default values on the custom resource of the
 // Kind Pod when those are created or updated.
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as it is used only for temporary operations and does not need to be deeply copied.
 type podCustomDefaulter struct {
-	defaulters []func(*corev1.Pod)
-}
-
-func newPodCustomDefaulter(registryName string, pullSecret string) podCustomDefaulter {
-	defaulter1 := BuildPodDefaulterAlterImgRegistry(registryName)
-	defaulter2 := BuildPodDefaulterAddImagePullSecrets(pullSecret)
-
-	return podCustomDefaulter{
-		defaulters: []func(*corev1.Pod){
-			defaulter1,
-			defaulter2,
-		},
-	}
+	defaulters []func(*corev1.Pod, map[string]string, map[string]string) error
+	GetNamespace
 }
 
 var _ webhook.CustomDefaulter = &podCustomDefaulter{}
 
+type GetNamespace = func(context.Context, string) (*corev1.Namespace, error)
+
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the Kind Pod.
-func (d *podCustomDefaulter) Default(_ context.Context, obj runtime.Object) (err error) {
+func (d *podCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (err error) {
 	defer func() {
 		r := recover()
 		if r == nil {
@@ -88,21 +99,27 @@ func (d *podCustomDefaulter) Default(_ context.Context, obj runtime.Object) (err
 		return fmt.Errorf("expected an Pod object but got %T", obj)
 	}
 
-	kvals := keysAndValues(pod)
-	podlog.Info("defaulting pod", kvals...)
+	ns, err := d.GetNamespace(ctx, pod.Namespace)
+	if err != nil {
+		slog.Error("unable to get namespace", "error", err)
+		return err
+	}
 
-	for _, defaulter := range d.defaulters {
-		podlog.Info("defaulting pod", kvals...)
-		defaulter(pod)
+	for i, defaulter := range d.defaulters {
+		kvals := keysAndValues(pod)
+		slog.With(kvals...).Debug("invoking defaulter", "i", fmt.Sprintf("%d", i))
+		if err := defaulter(pod, ns.Labels, ns.Annotations); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func keysAndValues(pod *corev1.Pod) []any {
 	return []any{
-		"name", pod.GetName(),
+		"name", pod.GetGenerateName(),
 		"ns", pod.GetNamespace(),
-		"uuid", pod.GetUID(),
 		"labels", pod.GetLabels(),
+		"annotations", pod.GetAnnotations(),
 	}
 }
