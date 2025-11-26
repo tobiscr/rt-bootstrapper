@@ -74,7 +74,8 @@ var _ = Describe("Pod Webhook", func() {
 			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 
 			By("calling the Default method to alter registry image")
-			defaulter.Default(ctx, pod)
+			err := defaulter.Default(ctx, pod)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			By("checking that the image was altered")
 			for _, container := range pod.Spec.Containers {
@@ -90,7 +91,8 @@ var _ = Describe("Pod Webhook", func() {
 			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 
 			By("calling the Default method to add pull secret")
-			defaulter.Default(ctx, pod)
+			err := defaulter.Default(ctx, pod)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			By(fmt.Sprintf("checking that the pod's image pull secrets contain '%s'", testPullSecret))
 			Expect(pod.Spec.ImagePullSecrets).Should(ContainElement(
