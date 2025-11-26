@@ -45,7 +45,7 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, pullSecre
 	}
 
 	defaulter := podCustomDefaulter{
-		defaulters: []func(*corev1.Pod, map[string]string, map[string]string) error{
+		defaulters: []func(*corev1.Pod, map[string]string) error{
 			d1,
 			d2,
 		},
@@ -67,7 +67,7 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, pullSecre
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as it is used only for temporary operations and does not need to be deeply copied.
 type podCustomDefaulter struct {
-	defaulters []func(*corev1.Pod, map[string]string, map[string]string) error
+	defaulters []func(*corev1.Pod, map[string]string) error
 	GetNamespace
 }
 
@@ -108,7 +108,7 @@ func (d *podCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (e
 	for i, defaulter := range d.defaulters {
 		kvals := keysAndValues(pod)
 		slog.With(kvals...).Debug("invoking defaulter", "i", fmt.Sprintf("%d", i))
-		if err := defaulter(pod, ns.Labels, ns.Annotations); err != nil {
+		if err := defaulter(pod, ns.Labels); err != nil {
 			return err
 		}
 	}

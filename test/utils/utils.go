@@ -241,10 +241,10 @@ func UncommentCode(filename, target, prefix string) error {
 	return nil
 }
 
-func ToContainers(s string) (*corev1.Container, error) {
+func ToPod(s string) (*corev1.Pod, error) {
 	slog.Default().Info("converting", "value", s)
 	r := strings.NewReader(s)
-	var out corev1.Container
+	var out corev1.Pod
 
 	err := json.NewDecoder(r).Decode(&out)
 	return &out, err

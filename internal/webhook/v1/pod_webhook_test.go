@@ -32,11 +32,10 @@ const (
 	testPullSecret   = "test-pull-secret"
 )
 
-func getTestPod(labels, annotations map[string]string) *corev1.Pod {
+func getTestPod(annotations map[string]string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: annotations,
-			Labels:      labels,
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
@@ -58,7 +57,7 @@ var _ = Describe("Pod Webhook", func() {
 		d2 := BuildPodDefaulterAlterImgRegistry(testRegistryName)
 
 		var defaulter = podCustomDefaulter{
-			defaulters: []func(*corev1.Pod, map[string]string, map[string]string) error{
+			defaulters: []func(*corev1.Pod, map[string]string) error{
 				d1, d2,
 			},
 			GetNamespace: func(_ context.Context, name string) (*corev1.Namespace, error) {
@@ -69,7 +68,6 @@ var _ = Describe("Pod Webhook", func() {
 		It("Should alter image registry", func() {
 			By(fmt.Sprintf("adding '%s' annotation", AnnotationAlterImgRegistry))
 			pod := getTestPod(
-				map[string]string{LabelRtBootstrapperCfg: "true"},
 				map[string]string{AnnotationAlterImgRegistry: "true"})
 			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 
@@ -86,7 +84,6 @@ var _ = Describe("Pod Webhook", func() {
 		It("Should add image pull secret", func() {
 			By(fmt.Sprintf("adding '%s' label", AnnotationSetPullSecret))
 			pod := getTestPod(
-				map[string]string{LabelRtBootstrapperCfg: "true"},
 				map[string]string{AnnotationSetPullSecret: "true"})
 			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 

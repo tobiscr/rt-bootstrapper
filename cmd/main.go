@@ -61,7 +61,6 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-
 	var registryName string
 	var imagePullSecretName string
 

@@ -27,6 +27,7 @@ import (
 	"github.com/kyma-project/rt-bootstrapper/test/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // namespace where the project is deployed in
@@ -300,13 +301,16 @@ var _ = Describe("Manager", Ordered, func() {
 
 			cmd = exec.Command("kubectl", "get", "pod",
 				"-n", "test",
-				"-o", "jsonpath={.items[0].spec.containers[0]}")
+				"-o", "jsonpath={.items[0]}")
 			output, err := utils.Run(cmd)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			container, err := utils.ToContainers(output)
+			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(container.Image).ShouldNot(HavePrefix("replace.me"))
+			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
+			Expect(pod.Spec.ImagePullSecrets).Should(ContainElement(corev1.LocalObjectReference{
+				Name: "registry-credentials",
+			}))
 		})
 
 		// +kubebuilder:scaffold:e2e-webhooks-checks

@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   labels:
     rt-cfg.kyma-project.io/alter-img-registry: "true"
+    rt-cfg.kyma-project.io/add-img-pull-secret: "true"
   name: test
 ---
 apiVersion: apps/v1
@@ -11,7 +12,6 @@ metadata:
   name: pause
   namespace: test
   labels:
-    rt-cfg.kyma-project.io/alter-img-registry: "true"
     app: pause
 spec:
   replicas: 1
