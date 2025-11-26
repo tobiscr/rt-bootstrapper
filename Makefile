@@ -101,17 +101,6 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 lint-config: golangci-lint ## Verify golangci-lint linter configuration
 	$(GOLANGCI_LINT) config verify
 
-coverage-clean:
-	@rm -f c.out
-
-.PHONY: coverage
-coverage: coverage-clean
-	@go test -coverprofile=c.out -coverpkg=./... ./...
-
-.PHONY: coverage-html
-coverage-html: coverage
-	@go tool cover -html=c.out -o cover.html
-
 ##@ Build
 
 .PHONY: build

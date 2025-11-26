@@ -35,7 +35,7 @@ jobs:
         run: |
           go mod tidy
           set -o pipefail
-          make coverage-html | tee test.log
+          make test | tee test.log
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
@@ -43,7 +43,6 @@ jobs:
           name: rt-bootstrapper-unit-tests
           path: |
             test.log
-            cover.html
 
       - name: Generate unit-test summary
         run: |
