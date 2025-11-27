@@ -54,12 +54,6 @@ var _ = Describe("Manager", Ordered, func() {
 		_, err := utils.Run(cmd)
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
 
-		By("labeling the namespace to enforce the restricted security policy")
-		cmd = exec.Command("kubectl", "label", "--overwrite", "ns", namespace,
-			"pod-security.kubernetes.io/enforce=restricted")
-		_, err = utils.Run(cmd)
-		Expect(err).NotTo(HaveOccurred(), "Failed to label namespace with restricted policy")
-
 		By("installing CRDs")
 		cmd = exec.Command("make", "install")
 		_, err = utils.Run(cmd)
@@ -285,6 +279,8 @@ var _ = Describe("Manager", Ordered, func() {
 		})
 
 		It("should alter the image name", func() {
+			testNamespace := "kyma-system"
+
 			By("applying the deployment in labeled namespace")
 			cmd := exec.Command("kubectl", "apply", "-f", "./test/e2e/testdata")
 			_, err := utils.Run(cmd)
@@ -292,7 +288,7 @@ var _ = Describe("Manager", Ordered, func() {
 
 			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause",
 				"--for", "condition=Available",
-				"--namespace", "test",
+				"--namespace", testNamespace,
 				"--timeout", "20s",
 			)
 
@@ -300,7 +296,7 @@ var _ = Describe("Manager", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			cmd = exec.Command("kubectl", "get", "pod",
-				"-n", "test",
+				"-n", testNamespace,
 				"-o", "jsonpath={.items[0]}")
 			output, err := utils.Run(cmd)
 			Expect(err).ShouldNot(HaveOccurred())

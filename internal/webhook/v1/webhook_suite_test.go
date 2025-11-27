@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -46,11 +47,12 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	ctx       context.Context
-	cancel    context.CancelFunc
-	k8sClient client.Client
-	cfg       *rest.Config
-	testEnv   *envtest.Environment
+	ctx               context.Context
+	cancel            context.CancelFunc
+	k8sClient         client.Client
+	cfg               *rest.Config
+	testEnv           *envtest.Environment
+	rtBootstrapperCfg apiv1.Config
 )
 
 func TestAPIs(t *testing.T) {
@@ -107,7 +109,19 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = SetupPodWebhookWithManager(mgr, "ghcr.io", "test-me-plz")
+	err = SetupPodWebhookWithManager(mgr, &apiv1.Config{
+		RegistryName:        "ghcr.io",
+		ImagePullSecretName: "test-me-plz",
+		Scope: apiv1.Scope{
+			Namespaces: []string{
+				"test",
+			},
+			Features: []string{
+				"rt-cfg.kyma-project.io/alter-img-registry",
+				"rt-cfg.kyma-project.io/add-img-pull-secret",
+			},
+		},
+	})
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:webhook

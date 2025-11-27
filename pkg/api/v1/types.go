@@ -15,6 +15,14 @@ type Scope struct {
 	Features   []string `json:"features"`
 }
 
+func (s Scope) Annotations() map[string]string {
+	out := map[string]string{}
+	for _, feature := range s.Features {
+		out[feature] = "true"
+	}
+	return out
+}
+
 type Config struct {
 	RegistryName        string `json:"registryName"`
 	ImagePullSecretName string `json:"imagePullSecretName"`

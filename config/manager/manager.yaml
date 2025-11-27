@@ -63,8 +63,6 @@ spec:
         args:
           - --leader-elect
           - --health-probe-bind-address=:8081
-          - --registry-name=ghcr.io
-          - --image-pull-secret-name=registry-credentials
         image: controller:latest
         name: manager
         ports: []
@@ -96,6 +94,9 @@ spec:
             cpu: 10m
             memory: 64Mi
         volumeMounts: []
-      volumes: []
+      volumes:
+      - name: rt-bootstrapper-config
+        configMap:
+          name: rt-bootstrapper-config
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

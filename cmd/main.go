@@ -37,8 +37,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	webhook_v1 "github.com/kyma-project/rt-bootstrapper/internal/webhook/v1"
+	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	// +kubebuilder:scaffold:imports
 )
+
+const configFilePath = "/rt-bootstrapper-config.json"
 
 var (
 	scheme   = runtime.NewScheme()
@@ -51,6 +54,14 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
+func readConfig(name string) (*apiv1.Config, error) {
+	file, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	return apiv1.NewConfig(file)
+}
+
 // nolint:gocyclo
 func main() {
 	var metricsAddr string
@@ -61,8 +72,6 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var registryName string
-	var imagePullSecretName string
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -81,11 +90,6 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	// webhook flags
-	flag.StringVar(&registryName, "registry-name", "",
-		"The container image registry name to set on the Pod resources.")
-	flag.StringVar(&imagePullSecretName, "image-pull-secret-name", "",
-		"The name of the image pull secret to add to the Pod resources.")
 
 	opts := zap.Options{
 		Development: true,
@@ -96,6 +100,12 @@ func main() {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	cfg, err := readConfig(configFilePath)
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -188,7 +198,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := webhook_v1.SetupPodWebhookWithManager(mgr, registryName, imagePullSecretName); err != nil {
+	if err := webhook_v1.SetupPodWebhookWithManager(mgr, cfg); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Pod")
 		os.Exit(1)
 	}

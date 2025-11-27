@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -60,15 +61,15 @@ var _ = Describe("Pod Webhook", func() {
 			defaulters: []func(*corev1.Pod, map[string]string) error{
 				d1, d2,
 			},
-			GetNamespace: func(_ context.Context, name string) (*corev1.Namespace, error) {
-				return &corev1.Namespace{}, nil
+			GetNsAnnotations: func(_ context.Context, name string) (map[string]string, error) {
+				return nil, nil
 			},
 		}
 
 		It("Should alter image registry", func() {
-			By(fmt.Sprintf("adding '%s' annotation", AnnotationAlterImgRegistry))
+			By(fmt.Sprintf("adding '%s' annotation", apiv1.AnnotationAlterImgRegistry))
 			pod := getTestPod(
-				map[string]string{AnnotationAlterImgRegistry: "true"})
+				map[string]string{apiv1.AnnotationAlterImgRegistry: "true"})
 			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 
 			By("calling the Default method to alter registry image")
@@ -82,9 +83,9 @@ var _ = Describe("Pod Webhook", func() {
 		})
 
 		It("Should add image pull secret", func() {
-			By(fmt.Sprintf("adding '%s' label", AnnotationSetPullSecret))
+			By(fmt.Sprintf("adding '%s' label", apiv1.AnnotationSetPullSecret))
 			pod := getTestPod(
-				map[string]string{AnnotationSetPullSecret: "true"})
+				map[string]string{apiv1.AnnotationSetPullSecret: "true"})
 			Expect(pod.Spec.Containers).ShouldNot(BeEmpty())
 
 			By("calling the Default method to add pull secret")

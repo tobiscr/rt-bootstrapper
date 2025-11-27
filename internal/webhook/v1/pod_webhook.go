@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
+	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -29,19 +31,21 @@ import (
 )
 
 // SetupPodWebhookWithManager registers the webhook for Pod in the manager.
-func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, pullSecret string) error {
+func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 
-	d1 := BuildPodDefaulterAddImagePullSecrets(pullSecret)
-	d2 := BuildPodDefaulterAlterImgRegistry(registryName)
+	slog.Info("setting up webhook", "cfg", cfg)
 
-	getNamespace := func(ctx context.Context, name string) (*corev1.Namespace, error) {
+	d1 := BuildPodDefaulterAddImagePullSecrets(cfg.ImagePullSecretName)
+	d2 := BuildPodDefaulterAlterImgRegistry(cfg.RegistryName)
+
+	getNamespace := func(ctx context.Context, name string) (map[string]string, error) {
 		var result corev1.Namespace
 		if err := mgr.GetClient().Get(ctx, client.ObjectKey{
 			Name: name,
 		}, &result); err != nil {
 			return nil, err
 		}
-		return &result, nil
+		return result.Annotations, nil
 	}
 
 	defaulter := podCustomDefaulter{
@@ -49,7 +53,9 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, pullSecre
 			d1,
 			d2,
 		},
-		GetNamespace: getNamespace,
+		GetNsAnnotations: getNamespace,
+		kymaNamespaces:   cfg.Scope.Namespaces,
+		activeFeatures:   cfg.Scope.Annotations(),
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).For(&corev1.Pod{}).
@@ -68,12 +74,14 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, registryName string, pullSecre
 // as it is used only for temporary operations and does not need to be deeply copied.
 type podCustomDefaulter struct {
 	defaulters []func(*corev1.Pod, map[string]string) error
-	GetNamespace
+	GetNsAnnotations
+	kymaNamespaces []string
+	activeFeatures map[string]string
 }
 
 var _ webhook.CustomDefaulter = &podCustomDefaulter{}
 
-type GetNamespace = func(context.Context, string) (*corev1.Namespace, error)
+type GetNsAnnotations = func(context.Context, string) (map[string]string, error)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the Kind Pod.
 func (d *podCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (err error) {
@@ -99,16 +107,20 @@ func (d *podCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (e
 		return fmt.Errorf("expected an Pod object but got %T", obj)
 	}
 
-	ns, err := d.GetNamespace(ctx, pod.Namespace)
-	if err != nil {
-		slog.Error("unable to get namespace", "error", err)
-		return err
+	nsAnnotations := d.activeFeatures
+
+	if !slices.Contains(d.kymaNamespaces, pod.Namespace) {
+		nsAnnotations, err = d.GetNsAnnotations(ctx, pod.Namespace)
+		if err != nil {
+			slog.Error("unable to get namespace", "error", err)
+			return err
+		}
 	}
 
 	for i, defaulter := range d.defaulters {
 		kvals := keysAndValues(pod)
 		slog.With(kvals...).Debug("invoking defaulter", "i", fmt.Sprintf("%d", i))
-		if err := defaulter(pod, ns.Labels); err != nil {
+		if err := defaulter(pod, nsAnnotations); err != nil {
 			return err
 		}
 	}
