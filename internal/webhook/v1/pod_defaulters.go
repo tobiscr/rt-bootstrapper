@@ -5,22 +5,18 @@ import (
 	"slices"
 
 	"github.com/kyma-project/rt-bootstrapper/internal/webhook/k8s"
+	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 type PodDefaulter = func(p *corev1.Pod, nsAnnotations map[string]string) error
 
-const (
-	AnnotationAlterImgRegistry = "rt-cfg.kyma-project.io/alter-img-registry"
-	AnnotationSetPullSecret    = "rt-cfg.kyma-project.io/add-img-pull-secret"
-)
-
 var (
 	annotationsAlterImgRegistry = map[string]string{
-		AnnotationAlterImgRegistry: "true",
+		apiv1.AnnotationAlterImgRegistry: "true",
 	}
 	annotationsSetPullSecret = map[string]string{
-		AnnotationSetPullSecret: "true",
+		apiv1.AnnotationSetPullSecret: "true",
 	}
 )
 
