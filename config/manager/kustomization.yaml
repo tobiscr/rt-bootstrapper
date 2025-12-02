@@ -7,8 +7,8 @@ images:
   newTag: test1
 
 resources:
-- manager.yaml
 - priority_class.yaml
+- manager.yaml
 
 patches:
 - path: priority_class_patch.yaml
