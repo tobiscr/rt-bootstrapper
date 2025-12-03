@@ -5,10 +5,10 @@ namePrefix: rt-bootstrapper-
 resources:
 - ../rbac
 - ../manager
-- ../webhook
 - ../certmanager
 - metrics_service.yaml
 - ../config
+- ../webhook
 
 patches:
   - path: manager_metrics_patch.yaml
