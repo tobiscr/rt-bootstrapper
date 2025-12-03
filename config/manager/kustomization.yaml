@@ -3,8 +3,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 
 images:
 - name: controller
-  newName: koala7659/rt-bootstrapper
-  newTag: test1
+  newName: example.com/rt-bootstrapper
+  newTag: v0.0.1
 
 resources:
 - priority_class.yaml
