@@ -13,37 +13,38 @@ type PodDefaulter = func(p *corev1.Pod, nsAnnotations map[string]string) error
 
 var (
 	annotationsAlterImgRegistry = map[string]string{
-		apiv1.AnnotationAlterImgRegistry: "true",
+		apiv1.AnnotationAlterImgRegistry: "false",
 	}
 	annotationsSetPullSecret = map[string]string{
-		apiv1.AnnotationSetPullSecret: "true",
+		apiv1.AnnotationSetPullSecret: "false",
 	}
 )
 
-func defaultPod(update func(*corev1.Pod), expectedAnnotations map[string]string) PodDefaulter {
+func defaultPod(update func(*corev1.Pod), features map[string]string) PodDefaulter {
 	return func(p *corev1.Pod, nsAnnotations map[string]string) error {
 		kvs := keysAndValues(p)
 		logger := slog.With(kvs...)
 
 		for _, annotations := range []map[string]string{p.Annotations, nsAnnotations} {
-			logger.Debug("defaulting pod", "expected-annotations", expectedAnnotations)
-			if k8s.Contains(annotations, expectedAnnotations) {
-				logger.Debug("expected annotations found", "labels", annotations)
+			if !k8s.Contains(annotations, features) {
+				logger.Debug("pod defaulting opt in", "ns-annotations", annotations)
 				update(p)
 				return nil
 			}
 		}
 
-		logger.Debug("ignoring pod", "expected-labels", expectedAnnotations)
+		logger.Debug("opt out", "ns-annotations", nsAnnotations)
 		return nil
 	}
 }
 
-func BuildPodDefaulterAlterImgRegistry(registryName string) PodDefaulter {
+func BuildPodDefaulterAlterImgRegistry(overrides map[string]string) PodDefaulter {
 	alterPodImageRegistry := func(p *corev1.Pod) {
 		for i := range p.Spec.Containers {
-			slog.With("registry-name", registryName).Debug("altering containter image")
-			p.Spec.Containers[i].Image = k8s.AlterPodImageRegistry(p.Spec.Containers[i].Image, registryName)
+			slog.With("overrides", overrides).Debug("altering containter image")
+			p.Spec.Containers[i].Image = k8s.AlterPodImageRegistry(
+				p.Spec.Containers[i].Image,
+				overrides)
 		}
 	}
 

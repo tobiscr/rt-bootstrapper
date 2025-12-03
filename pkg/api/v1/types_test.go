@@ -16,33 +16,16 @@ func TestNewConfig(t *testing.T) {
 		expected v1.Config
 	}{
 		{
-			name: "with scope",
+			name: "all",
 			val: `{ 
-  "registryName": "rn1",
   "imagePullSecretName": "ipsn1",
-  "scope": { 
-    "namespaces": ["ns1"], 
-    "features": ["f1", "f2"]
-  }
+  "overrides": { "rn1": "orn1" }
 }`,
 			expected: v1.Config{
-				RegistryName:        "rn1",
-				ImagePullSecretName: "ipsn1",
-				Scope: v1.Scope{
-					Namespaces: []string{"ns1"},
-					Features:   []string{"f1", "f2"},
+				Overrides: map[string]string{
+					"rn1": "orn1",
 				},
-			},
-		},
-		{
-			name: "without scope",
-			val: `{
-  "registryName": "rn2",
-  "imagePullSecretName": "ipsn2"
-}`,
-			expected: v1.Config{
-				RegistryName:        "rn2",
-				ImagePullSecretName: "ipsn2",
+				ImagePullSecretName: "ipsn1",
 			},
 		},
 	}

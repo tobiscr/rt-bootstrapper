@@ -27,6 +27,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -36,6 +37,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/kyma-project/rt-bootstrapper/internal/controller"
 	webhook_v1 "github.com/kyma-project/rt-bootstrapper/internal/webhook/v1"
 	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	// +kubebuilder:scaffold:imports
@@ -203,6 +205,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := (&controller.SecretReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		NamespacedName: types.NamespacedName{
+			Name:      cfg.ImagePullSecretName,
+			Namespace: "kyma-system", // FIXME change in API
+		},
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Secret")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

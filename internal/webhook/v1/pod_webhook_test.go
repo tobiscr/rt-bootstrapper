@@ -41,10 +41,10 @@ func getTestPod(annotations map[string]string) *corev1.Pod {
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Image: "test/me/plz:now",
+					Image: "test.com/me/plz:now",
 				},
 				{
-					Image: "test/this/too:plz",
+					Image: "test.com:2000/this/too:plz",
 				},
 			},
 		},
@@ -55,7 +55,10 @@ var _ = Describe("Pod Webhook", func() {
 
 	Context("When creating Pod under Defaulting Webhook", func() {
 		d1 := BuildPodDefaulterAddImagePullSecrets(testPullSecret)
-		d2 := BuildPodDefaulterAlterImgRegistry(testRegistryName)
+		d2 := BuildPodDefaulterAlterImgRegistry(map[string]string{
+			"test.com":      testRegistryName,
+			"test.com:2000": testRegistryName,
+		})
 
 		var defaulter = podCustomDefaulter{
 			defaulters: []func(*corev1.Pod, map[string]string) error{
