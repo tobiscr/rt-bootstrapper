@@ -41,11 +41,10 @@ type SecretReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	types.NamespacedName
+	SecretSyncInterval time.Duration
 }
 
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=secrets/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups="",resources=secrets/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;patch
 
 func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
@@ -112,7 +111,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				"failed to reconcile due to patch errors: %s", msg)
 		}
 
-		return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
+		return ctrl.Result{RequeueAfter: r.SecretSyncInterval}, nil
 	}
 
 	if isCredentialsSecretUpdated {
@@ -144,6 +143,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if isNamespaceCreated {
+		log.Debug("fetching master-secret", "namespaced-name", r.NamespacedName)
 		var masterSecret corev1.Secret
 		if err := r.Get(ctx, r.NamespacedName, &masterSecret); err != nil {
 			return ctrl.Result{}, err
@@ -170,7 +170,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if err := r.Patch(ctx, &credentialsSecret, client.Apply, &client.PatchOptions{
 			FieldManager: apiv1.FiledManager,
 			Force:        ptr.To(true),
-		}); err != nil {
+		}); client.IgnoreNotFound(err) != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil

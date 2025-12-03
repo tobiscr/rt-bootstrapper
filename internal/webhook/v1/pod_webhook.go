@@ -38,13 +38,20 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 	d2 := BuildPodDefaulterAlterImgRegistry(cfg.Overrides)
 
 	getNamespace := func(ctx context.Context, name string) (map[string]string, error) {
-		var result corev1.Namespace
+		var ns corev1.Namespace
 		if err := mgr.GetClient().Get(ctx, client.ObjectKey{
 			Name: name,
-		}, &result); err != nil {
+		}, &ns); err != nil {
 			return nil, err
 		}
-		return result.Annotations, nil
+
+		result := ns.Annotations
+
+		slog.Default().WithGroup("get-namespace").Debug("namespace fetched",
+			"name", name,
+			"annotations", result)
+
+		return result, nil
 	}
 
 	defaulter := podCustomDefaulter{
@@ -110,7 +117,11 @@ func (d *podCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (e
 
 	for i, defaulter := range d.defaulters {
 		kvals := keysAndValues(pod)
-		slog.With(kvals...).Debug("invoking defaulter", "i", fmt.Sprintf("%d", i))
+		slog.Default().WithGroup("pod").With(kvals...).
+			WithGroup("ns").With("annotations", nsAnnotations).
+			WithGroup("for").Debug("invoking defaulter",
+			"i", fmt.Sprintf("%d", i))
+
 		if err := defaulter(pod, nsAnnotations); err != nil {
 			return err
 		}
@@ -122,7 +133,6 @@ func keysAndValues(pod *corev1.Pod) []any {
 	return []any{
 		"name", pod.GetGenerateName(),
 		"ns", pod.GetNamespace(),
-		"labels", pod.GetLabels(),
-		"annotations", pod.GetAnnotations(),
+		"pod-annotations", pod.GetAnnotations(),
 	}
 }

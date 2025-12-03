@@ -22,18 +22,23 @@ var (
 
 func defaultPod(update func(*corev1.Pod), features map[string]string) PodDefaulter {
 	return func(p *corev1.Pod, nsAnnotations map[string]string) error {
+		// prepare logger
 		kvs := keysAndValues(p)
-		logger := slog.With(kvs...)
+		logger := slog.Default().
+			WithGroup("args").
+			With(kvs...).
+			With("ns-annotations", nsAnnotations).
+			With("features", features)
 
 		for _, annotations := range []map[string]string{p.Annotations, nsAnnotations} {
-			if !k8s.Contains(annotations, features) {
-				logger.Debug("pod defaulting opt in", "ns-annotations", annotations)
-				update(p)
+			if k8s.Contains(annotations, features) {
+				logger.Debug("opt out", "ns-annotations", nsAnnotations)
 				return nil
 			}
 		}
 
-		logger.Debug("opt out", "ns-annotations", nsAnnotations)
+		logger.Debug("pod defaulting opt in")
+		update(p)
 		return nil
 	}
 }

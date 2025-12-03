@@ -13,8 +13,9 @@ const (
 )
 
 type Config struct {
-	Overrides           map[string]string `json:"overrides"`
-	ImagePullSecretName string            `json:"imagePullSecretName"`
+	Overrides                map[string]string `json:"overrides"`
+	ImagePullSecretName      string            `json:"imagePullSecretName"`
+	ImagePullSecretNamespace string            `json:"imagePullSecretNamespace"`
 }
 
 func NewConfig(r io.Reader) (*Config, error) {

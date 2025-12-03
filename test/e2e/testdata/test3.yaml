@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pause-test3
+  namespace: rt-bootstrapper-test1
+  labels:
+    app: pause-test3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pause-test3
+  template:
+    metadata:
+      annotations:
+        rt-cfg.kyma-project.io/add-img-pull-secret: "false"
+      labels:
+        app: pause-test3
+    spec:
+      containers:
+      - name: pause
+        image: k8s.gcr.io/pause:latest
+

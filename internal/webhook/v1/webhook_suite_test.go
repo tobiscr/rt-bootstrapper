@@ -112,7 +112,8 @@ var _ = BeforeSuite(func() {
 		Overrides: map[string]string{
 			"replace.me": "ghcr.io",
 		},
-		ImagePullSecretName: "test-me-plz",
+		ImagePullSecretName:      "test-me-plz",
+		ImagePullSecretNamespace: "kyma-system",
 	})
 	Expect(err).NotTo(HaveOccurred())
 

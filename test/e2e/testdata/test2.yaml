@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pause-test2
+  labels:
+    app: pause-test2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pause-test2
+  template:
+    metadata:
+      annotations:
+        rt-cfg.kyma-project.io/add-img-pull-secret: "false"
+      labels:
+        app: pause-test2
+    spec:
+      containers:
+      - name: pause
+        image: replace.me/kyma-project/rt-bootstrapper/pause:e2e
+

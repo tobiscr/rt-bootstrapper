@@ -19,13 +19,15 @@ func TestNewConfig(t *testing.T) {
 			name: "all",
 			val: `{ 
   "imagePullSecretName": "ipsn1",
+  "imagePullSecretNamespace": "ipsns1",
   "overrides": { "rn1": "orn1" }
 }`,
 			expected: v1.Config{
 				Overrides: map[string]string{
 					"rn1": "orn1",
 				},
-				ImagePullSecretName: "ipsn1",
+				ImagePullSecretName:      "ipsn1",
+				ImagePullSecretNamespace: "ipsns1",
 			},
 		},
 	}

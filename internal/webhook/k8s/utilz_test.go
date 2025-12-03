@@ -4,7 +4,35 @@ import (
 	"testing"
 
 	"github.com/kyma-project/rt-bootstrapper/internal/webhook/k8s"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestContains(t *testing.T) {
+	tcs := []struct {
+		name     string
+		l, r     map[string]string
+		expected bool
+	}{
+		{
+			name: "should be found #1",
+			l: map[string]string{
+				"some": "test",
+				"test": "me",
+			},
+			r: map[string]string{
+				"test": "me",
+			},
+			expected: true,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := k8s.Contains(tc.l, tc.r)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
 
 func TestReplaceImageRegistry(t *testing.T) {
 	tests := []struct {

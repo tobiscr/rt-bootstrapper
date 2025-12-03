@@ -33,6 +33,9 @@ import (
 // namespace where the project is deployed in
 const namespace = "rt-bootstrapper-system"
 
+const testNamespace1 = "rt-bootstrapper-test1"
+const testNamespace2 = "rt-bootstrapper-test2"
+
 // serviceAccountName created for the project
 const serviceAccountName = "rt-bootstrapper-controller-manager"
 
@@ -53,6 +56,30 @@ var _ = Describe("Manager", Ordered, func() {
 		cmd := exec.Command("kubectl", "create", "ns", namespace)
 		_, err := utils.Run(cmd)
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
+
+		By(fmt.Sprintf("creating test namespace: %s", testNamespace1))
+		cmd = exec.Command("kubectl", "create", "ns", testNamespace1)
+		_, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
+
+		By(fmt.Sprintf("creating test namespace: %s", testNamespace2))
+		cmd = exec.Command("kubectl", "create", "ns", testNamespace2)
+		_, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
+
+		By(fmt.Sprintf("opt out altering image registry for namespace: %s", testNamespace2))
+		cmd = exec.Command("kubectl", "annotate", "ns", testNamespace2,
+			"rt-cfg.kyma-project.io/add-img-pull-secret=false")
+		_, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
+
+		By("creating master-password secret")
+		cmd = exec.Command("kubectl", "create", "secret", "generic", "registry-credentials",
+			"--from-literal=.dockerconfigjson=admin123",
+			"-n", namespace)
+
+		_, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred(), "Failed to create master-password secret")
 
 		By("installing CRDs")
 		cmd = exec.Command("make", "install")
@@ -278,15 +305,18 @@ var _ = Describe("Manager", Ordered, func() {
 			Eventually(verifyCAInjection).Should(Succeed())
 		})
 
-		It("should alter the image name", func() {
-			testNamespace := "kyma-system"
+		It("should alter the image name and add imagePullSecret property", func() {
+			testNamespace := "rt-bootstrapper-test1"
 
-			By("applying the deployment in labeled namespace")
-			cmd := exec.Command("kubectl", "apply", "-f", "./test/e2e/testdata")
+			By("applying the deployment in opt in namespace")
+			cmd := exec.Command("kubectl", "apply",
+				"-f", "./test/e2e/testdata/test1.yaml",
+				"-n", testNamespace)
+
 			_, err := utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
 
-			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause",
+			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test1",
 				"--for", "condition=Available",
 				"--namespace", testNamespace,
 				"--timeout", "20s",
@@ -296,6 +326,7 @@ var _ = Describe("Manager", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			cmd = exec.Command("kubectl", "get", "pod",
+				"-l", "app=pause-test1",
 				"-n", testNamespace,
 				"-o", "jsonpath={.items[0]}")
 			output, err := utils.Run(cmd)
@@ -307,8 +338,111 @@ var _ = Describe("Manager", Ordered, func() {
 			Expect(pod.Spec.ImagePullSecrets).Should(ContainElement(corev1.LocalObjectReference{
 				Name: "registry-credentials",
 			}))
+
+			cmd = exec.Command("kubectl", "get", "secret",
+				"-n", testNamespace)
+			_, err = utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
 		})
 
+		It("should just alter the image name if opt out on pod lvl from adding imagePullSecret property", func() {
+			By("applying the deployment in opt in namespace")
+			cmd := exec.Command("kubectl", "apply",
+				"-f", "./test/e2e/testdata/test2.yaml",
+				"-n", testNamespace1)
+
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test2",
+				"--for", "condition=Available",
+				"--namespace", testNamespace1,
+				"--timeout", "20s",
+			)
+
+			_, err = utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "get", "pod",
+				"-l", "app=pause-test2",
+				"-n", testNamespace1,
+				"-o", "jsonpath={.items[0]}")
+			output, err := utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			pod, err := utils.ToPod(output)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
+			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
+				Name: "registry-credentials",
+			}))
+		})
+
+		It("should just alter the image name if opt out on ns lvl from adding imagePullSecret property", func() {
+			By("applying the deployment in opt in namespace")
+			cmd := exec.Command("kubectl", "apply",
+				"-f", "./test/e2e/testdata/test1.yaml",
+				"-n", testNamespace2)
+
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test1",
+				"--for", "condition=Available",
+				"--namespace", testNamespace2,
+				"--timeout", "20s",
+			)
+
+			_, err = utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "get", "pod",
+				"-l", "app=pause-test1",
+				"-n", testNamespace2,
+				"-o", "jsonpath={.items[0]}")
+			output, err := utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			pod, err := utils.ToPod(output)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
+			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
+				Name: "registry-credentials",
+			}))
+		})
+
+		It("should just add imagePullSecret if opt out on pod lvl from altering image name", func() {
+			By("applying the deployment")
+			cmd := exec.Command("kubectl", "apply",
+				"-f", "./test/e2e/testdata/test3.yaml",
+				"-n", testNamespace1)
+
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test3",
+				"--for", "condition=Available",
+				"--namespace", testNamespace1,
+				"--timeout", "20s",
+			)
+
+			_, err = utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "get", "pod",
+				"-l", "app=pause-test3",
+				"-n", testNamespace1,
+				"-o", "jsonpath={.items[0]}")
+			output, err := utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			pod, err := utils.ToPod(output)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("k8s.gcr.io"))
+			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
+				Name: "registry-credentials",
+			}))
+		})
 		// +kubebuilder:scaffold:e2e-webhooks-checks
 	})
 })

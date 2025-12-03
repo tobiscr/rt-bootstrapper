@@ -21,6 +21,7 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -210,8 +211,9 @@ func main() {
 		Scheme: mgr.GetScheme(),
 		NamespacedName: types.NamespacedName{
 			Name:      cfg.ImagePullSecretName,
-			Namespace: "kyma-system", // FIXME change in API
+			Namespace: cfg.ImagePullSecretNamespace,
 		},
+		SecretSyncInterval: time.Minute,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Secret")
 		os.Exit(1)

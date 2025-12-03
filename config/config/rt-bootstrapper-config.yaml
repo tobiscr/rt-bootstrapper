@@ -3,8 +3,10 @@ data:
   rt-bootstrapper-config.json: |
     {
       "imagePullSecretName": "registry-credentials",
+      "imagePullSecretNamespace": "rt-bootstrapper-system",
       "overrides": {
-        "replace.me": "ghcr.io"
+        "replace.me": "ghcr.io",
+        "example.com": "ghcr.io"
       }
     }
 kind: ConfigMap

@@ -35,18 +35,8 @@ func (p masterSecret) Create(e event.TypedCreateEvent[client.Object]) bool {
 	return accept
 }
 
-// Delete - handles the case of a deletion when a secret has the same name as
-// the master secret
 func (p masterSecret) Delete(e event.TypedDeleteEvent[client.Object]) bool {
-	args := []any{
-		"namespace", e.Object.GetNamespace(),
-		"name", e.Object.GetName(),
-	}
-
-	accept := p.Name == e.Object.GetName()
-	p.log.With(args...).Debug("incomming update event", "accept", accept)
-
-	return accept
+	return false
 }
 
 // Update - handles the case of an update when a secret has the same name
