@@ -17,5 +17,5 @@ spec:
     name: kyma
     namespace: system
   secretRef:
-    name: rt-bootstrapper-certificates
+    name: rt-bootstrapper-webhook-cert
     namespace: system
