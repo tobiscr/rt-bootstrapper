@@ -16,15 +16,16 @@ namePrefix: rt-bootstrapper-
 
 resources:
 - ../rbac
-- ../manager
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
 - ../gardener/certmanager
+- ../manager
 # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
 #- ../prometheus
 # [METRICS] Expose the controller manager metrics service.
 - metrics_service.yaml
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
+- ../config
 - ../webhook
 # [NETWORK POLICY] Protect the /metrics endpoint and Webhook Server with NetworkPolicy.
 # Only Pod(s) running a namespace labeled with 'metrics: enabled' will be able to gather the metrics.
@@ -116,6 +117,20 @@ replacements:
 #         delimiter: '.'
 #         index: 1
 #         create: true
+ - source:
+    kind: Deployment
+    fieldPath: metadata.namespace
+   targets:
+   - select:
+       name: kyma
+       kind: Certificate
+     fieldPaths:
+       - spec.issuerRef.namespace
+   - select:
+       name: kyma
+       kind: Certificate
+     fieldPaths:
+       - spec.secretRef.namespace
 
  - source: # Uncomment the following block if you have any webhook
      kind: Service

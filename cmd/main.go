@@ -17,31 +17,44 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"log/slog"
 	"os"
+	"path"
+
+	"github.com/kyma-project/rt-bootstrapper/internal/webhook/certificate"
+	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	webhook "github.com/kyma-project/rt-bootstrapper/internal/webhook/server"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	//"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	webhook_v1 "github.com/kyma-project/rt-bootstrapper/internal/webhook/v1"
 	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 
-const configFilePath = "/rt-bootstrapper-config.json"
+const (
+	certificateAuthorityName = "ca.crt"
+	webhookServerKeyName     = "tls.key"
+	webhookServerCertName    = "tls.crt"
+	flagWebhookName          = "webhook-name"
+	configFilePath           = "/rt-bootstrapper-config.json"
+	patchFieldManagerName    = "rt-bootstrapper-webhook"
+)
 
 var (
 	scheme   = runtime.NewScheme()
@@ -73,6 +86,8 @@ func main() {
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
 
+	var webhookCfgName string
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -84,6 +99,9 @@ func main() {
 	flag.StringVar(&webhookCertPath, "webhook-cert-path", "", "The directory that contains the webhook certificate.")
 	flag.StringVar(&webhookCertName, "webhook-cert-name", "tls.crt", "The name of the webhook certificate file.")
 	flag.StringVar(&webhookCertKey, "webhook-cert-key", "tls.key", "The name of the webhook key file.")
+
+	flag.StringVar(&webhookCfgName, flagWebhookName, "rt-bootstrapper-mutating-webhook-configuration", "The name of the validating webhook configuration to be updated.")
+
 	flag.StringVar(&metricsCertPath, "metrics-cert-path", "",
 		"The directory that contains the metrics server certificate.")
 	flag.StringVar(&metricsCertName, "metrics-cert-name", "tls.crt", "The name of the metrics server certificate file.")
@@ -122,22 +140,52 @@ func main() {
 		tlsOpts = append(tlsOpts, disableHTTP2)
 	}
 
-	// Initial webhook TLS options
-	webhookTLSOpts := tlsOpts
-	webhookServerOptions := webhook.Options{
-		TLSOpts: webhookTLSOpts,
+	restConfig := ctrl.GetConfigOrDie()
+
+	rtClient, err := client.New(restConfig, client.Options{
+		Scheme: scheme,
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create client")
+		os.Exit(1)
 	}
 
-	if len(webhookCertPath) > 0 {
-		setupLog.Info("Initializing webhook certificate watcher using provided certificates",
-			"webhook-cert-path", webhookCertPath, "webhook-cert-name", webhookCertName, "webhook-cert-key", webhookCertKey)
-
-		webhookServerOptions.CertDir = webhookCertPath
-		webhookServerOptions.CertName = webhookCertName
-		webhookServerOptions.KeyName = webhookCertKey
+	if len(webhookCertPath) == 0 {
+		setupLog.Info("Cannot start webhook server without certificate path")
+		os.Exit(1)
 	}
+	setupLog.Info("Initializing webhook certificate watcher using provided certificates",
+		"webhook-cert-path", webhookCertPath, "webhook-cert-name", webhookCertName, "webhook-cert-key", webhookCertKey)
 
-	webhookServer := webhook.NewServer(webhookServerOptions)
+	webhookServer := webhook.NewServer(webhook.Options{
+		TLSOpts:  tlsOpts,
+		CertDir:  webhookCertPath,
+		KeyName:  webhookCertKey,
+		CertName: webhookCertName,
+		Callback: func(cert tls.Certificate) {
+			certPath := path.Join(webhookCertPath, certificateAuthorityName)
+			data, err := os.ReadFile(certPath)
+			if err != nil {
+				setupLog.Error(err, "unable to read certificate")
+				os.Exit(1)
+			}
+			setupLog.Info("certificate loaded")
+
+			updateCABundle := certificate.BuildUpdateCABundle(
+				context.Background(),
+				rtClient,
+				certificate.BuildUpdateCABundleOpts{
+					Name:         webhookCfgName,
+					CABundle:     data,
+					FieldManager: patchFieldManagerName,
+				})
+
+			if err := retry.RetryOnConflict(retry.DefaultBackoff, updateCABundle); err != nil {
+				setupLog.Error(err, "unable to patch mutating webhook configuration")
+				os.Exit(1)
+			}
+		},
+	})
 
 	// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.
 	// More info:
@@ -205,12 +253,12 @@ func main() {
 
 	// +kubebuilder:scaffold:builder
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+	if err := mgr.AddHealthzCheck("healthz", webhookServer.StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
 
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+	if err := mgr.AddReadyzCheck("readyz", webhookServer.StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
