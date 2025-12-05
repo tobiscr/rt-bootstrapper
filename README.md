@@ -8,18 +8,6 @@
 > - `Code of Conduct` - do not change this!
 > - `Licensing` - do not change this!
 
-1. Need label names
-
-2. Scenarios
-
-a) user labes namespace
-- there is no objects (nothing happens)
-- there are objects (we label all pods)
-
-b) user labels pod
-- the namespace is labeled (nothing happens)
-- the namespace is not labeled
-
 # {Project Title}
 <!--- mandatory --->
 > Modify the title and insert the name of your project. Use Heading 1 (H1).

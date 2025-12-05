@@ -5,18 +5,26 @@ import (
 	"strings"
 )
 
-func AlterPodImageRegistry(image string, registry string) string {
+func fixRegistry(registry string, overrides map[string]string) string {
+	override, found := overrides[registry]
+	if !found {
+		return registry
+	}
+	return override
+}
+
+func AlterPodImageRegistry(image string, overrides map[string]string) string {
 	data := strings.Split(image, "/")
 
-	if len(data) == 1 {
-		return fmt.Sprintf("%s/%s", registry, image)
-	}
+	isRegistryProvided := len(data) > 1 &&
+		(strings.Contains(data[0], ".") || strings.Contains(data[0], ":"))
 
-	if strings.Contains(data[0], ".") || strings.Contains(data[0], ":") || data[0] == "localhost" {
+	if isRegistryProvided {
+		registry := fixRegistry(data[0], overrides)
 		return fmt.Sprintf("%s/%s", registry, strings.Join(data[1:], "/"))
 	}
 
-	return fmt.Sprintf("%s/%s", registry, image)
+	return image
 }
 
 // Contains - returns true if l contains all the keys with values from r

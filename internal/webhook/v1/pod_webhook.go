@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -36,16 +35,23 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 	slog.Info("setting up webhook", "cfg", cfg)
 
 	d1 := BuildPodDefaulterAddImagePullSecrets(cfg.ImagePullSecretName)
-	d2 := BuildPodDefaulterAlterImgRegistry(cfg.RegistryName)
+	d2 := BuildPodDefaulterAlterImgRegistry(cfg.Overrides)
 
 	getNamespace := func(ctx context.Context, name string) (map[string]string, error) {
-		var result corev1.Namespace
+		var ns corev1.Namespace
 		if err := mgr.GetClient().Get(ctx, client.ObjectKey{
 			Name: name,
-		}, &result); err != nil {
+		}, &ns); err != nil {
 			return nil, err
 		}
-		return result.Annotations, nil
+
+		result := ns.Annotations
+
+		slog.Default().WithGroup("get-namespace").Debug("namespace fetched",
+			"name", name,
+			"annotations", result)
+
+		return result, nil
 	}
 
 	defaulter := podCustomDefaulter{
@@ -54,8 +60,6 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 			d2,
 		},
 		GetNsAnnotations: getNamespace,
-		kymaNamespaces:   cfg.Scope.Namespaces,
-		activeFeatures:   cfg.Scope.Annotations(),
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).For(&corev1.Pod{}).
@@ -76,8 +80,6 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 type podCustomDefaulter struct {
 	defaulters []func(*corev1.Pod, map[string]string) error
 	GetNsAnnotations
-	kymaNamespaces []string
-	activeFeatures map[string]string
 }
 
 var _ webhook.CustomDefaulter = &podCustomDefaulter{}
@@ -108,19 +110,19 @@ func (d *podCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (e
 		return fmt.Errorf("expected an Pod object but got %T", obj)
 	}
 
-	nsAnnotations := d.activeFeatures
-
-	if !slices.Contains(d.kymaNamespaces, pod.Namespace) {
-		nsAnnotations, err = d.GetNsAnnotations(ctx, pod.Namespace)
-		if err != nil {
-			slog.Error("unable to get namespace", "error", err)
-			return err
-		}
+	nsAnnotations, err := d.GetNsAnnotations(ctx, pod.Namespace)
+	if err != nil {
+		slog.Error("unable to get namespace", "error", err)
+		return err
 	}
 
 	for i, defaulter := range d.defaulters {
 		kvals := keysAndValues(pod)
-		slog.With(kvals...).Debug("invoking defaulter", "i", fmt.Sprintf("%d", i))
+		slog.Default().WithGroup("pod").With(kvals...).
+			WithGroup("ns").With("annotations", nsAnnotations).
+			WithGroup("for").Debug("invoking defaulter",
+			"i", fmt.Sprintf("%d", i))
+
 		if err := defaulter(pod, nsAnnotations); err != nil {
 			return err
 		}
@@ -132,7 +134,6 @@ func keysAndValues(pod *corev1.Pod) []any {
 	return []any{
 		"name", pod.GetGenerateName(),
 		"ns", pod.GetNamespace(),
-		"labels", pod.GetLabels(),
-		"annotations", pod.GetAnnotations(),
+		"pod-annotations", pod.GetAnnotations(),
 	}
 }

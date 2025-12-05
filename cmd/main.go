@@ -23,6 +23,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"time"
 
 	"github.com/kyma-project/rt-bootstrapper/internal/webhook/certificate"
 	"k8s.io/client-go/util/retry"
@@ -34,14 +35,17 @@ import (
 
 	webhook "github.com/kyma-project/rt-bootstrapper/internal/webhook/server"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	//"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/kyma-project/rt-bootstrapper/internal/controller"
 	webhook_v1 "github.com/kyma-project/rt-bootstrapper/internal/webhook/v1"
 	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	// +kubebuilder:scaffold:imports
@@ -251,6 +255,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := (&controller.SecretReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		NamespacedName: types.NamespacedName{
+			Name:      cfg.ImagePullSecretName,
+			Namespace: cfg.ImagePullSecretNamespace,
+		},
+		SecretSyncInterval: time.Minute,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Secret")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", webhookServer.StartedChecker()); err != nil {

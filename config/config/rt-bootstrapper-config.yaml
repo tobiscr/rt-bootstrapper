@@ -2,16 +2,11 @@ apiVersion: v1
 data:
   rt-bootstrapper-config.json: |
     {
-      "registryName": "ghcr.io",
       "imagePullSecretName": "registry-credentials",
-      "scope": {
-        "namespaces": [
-          "kyma-system"
-        ],
-        "features": [
-          "rt-cfg.kyma-project.io/alter-img-registry",
-          "rt-cfg.kyma-project.io/add-img-pull-secret"
-        ]
+      "imagePullSecretNamespace": "rt-bootstrapper-system",
+      "overrides": {
+        "replace.me": "ghcr.io",
+        "example.com": "ghcr.io"
       }
     }
 kind: ConfigMap

@@ -8,25 +8,14 @@ import (
 const (
 	AnnotationAlterImgRegistry = "rt-cfg.kyma-project.io/alter-img-registry"
 	AnnotationSetPullSecret    = "rt-cfg.kyma-project.io/add-img-pull-secret"
+	AnnotationOutdated         = "rt-cfg.kyma-project.io/outdated"
+	FiledManager               = "rt-bootstrapper"
 )
 
-type Scope struct {
-	Namespaces []string `json:"namespaces"`
-	Features   []string `json:"features"`
-}
-
-func (s Scope) Annotations() map[string]string {
-	out := map[string]string{}
-	for _, feature := range s.Features {
-		out[feature] = "true"
-	}
-	return out
-}
-
 type Config struct {
-	RegistryName        string `json:"registryName"`
-	ImagePullSecretName string `json:"imagePullSecretName"`
-	Scope               Scope  `json:"scope"`
+	Overrides                map[string]string `json:"overrides"`
+	ImagePullSecretName      string            `json:"imagePullSecretName"`
+	ImagePullSecretNamespace string            `json:"imagePullSecretNamespace"`
 }
 
 func NewConfig(r io.Reader) (*Config, error) {
