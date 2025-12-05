@@ -50,7 +50,7 @@ func BuildUpdateCABundle(
 		}
 
 		if !updated {
-			logger.Info("validating webhook configuration up to date")
+			logger.Info("mutating webhook configuration up to date")
 			return nil
 		}
 
@@ -61,7 +61,7 @@ func BuildUpdateCABundle(
 		patchCtx, cancelPatch := context.WithTimeout(ctx, 5*time.Second)
 		defer cancelPatch()
 
-		logger.Info("attempting to patch validating webhook configuration", "name", mutatingWebhook.Name)
+		logger.Info("attempting to patch mutating webhook configuration", "name", mutatingWebhook.Name)
 
 		return rtClient.Patch(patchCtx, &mutatingWebhook, client.Apply, &client.PatchOptions{
 			FieldManager: opts.FieldManager,

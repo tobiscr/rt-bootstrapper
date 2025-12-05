@@ -97,10 +97,10 @@ func main() {
 	flag.BoolVar(&secureMetrics, "metrics-secure", true,
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.StringVar(&webhookCertPath, "webhook-cert-path", "", "The directory that contains the webhook certificate.")
-	flag.StringVar(&webhookCertName, "webhook-cert-name", "tls.crt", "The name of the webhook certificate file.")
-	flag.StringVar(&webhookCertKey, "webhook-cert-key", "tls.key", "The name of the webhook key file.")
+	flag.StringVar(&webhookCertName, "webhook-cert-name", webhookServerCertName, "The name of the webhook certificate file.")
+	flag.StringVar(&webhookCertKey, "webhook-cert-key", webhookServerKeyName, "The name of the webhook key file.")
 
-	flag.StringVar(&webhookCfgName, flagWebhookName, "rt-bootstrapper-mutating-webhook-configuration", "The name of the validating webhook configuration to be updated.")
+	flag.StringVar(&webhookCfgName, flagWebhookName, "rt-bootstrapper-mutating-webhook-configuration", "The name of the mutating webhook configuration to be updated.")
 
 	flag.StringVar(&metricsCertPath, "metrics-cert-path", "",
 		"The directory that contains the metrics server certificate.")
