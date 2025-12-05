@@ -17,11 +17,8 @@ limitations under the License.
 package e2e
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/kyma-project/rt-bootstrapper/test/utils"
@@ -33,13 +30,13 @@ import (
 const namespace = "kyma-system"
 
 // serviceAccountName created for the project
-const serviceAccountName = "rt-bootstrapper-controller-manager"
+// const serviceAccountName = "rt-bootstrapper-controller-manager"
 
 // metricsServiceName is the name of the metrics service of the project
-const metricsServiceName = "rt-bootstrapper-controller-manager-metrics-service"
+// const metricsServiceName = "rt-bootstrapper-controller-manager-metrics-service"
 
 // metricsRoleBindingName is the name of the RBAC that will be created to allow get the metrics data
-const metricsRoleBindingName = "rt-bootstrapper-metrics-binding"
+// const metricsRoleBindingName = "rt-bootstrapper-metrics-binding"
 
 var _ = Describe("Manager", Ordered, func() {
 	var controllerPodName string
@@ -318,7 +315,7 @@ var _ = Describe("Manager", Ordered, func() {
 // serviceAccountToken returns a token for the specified service account in the given namespace.
 // It uses the Kubernetes TokenRequest API to generate a token by directly sending a request
 // and parsing the resulting token from the API response.
-func serviceAccountToken() (string, error) {
+/*func serviceAccountToken() (string, error) {
 	const tokenRequestRawString = `{
 		"apiVersion": "authentication.k8s.io/v1",
 		"kind": "TokenRequest"
@@ -354,7 +351,7 @@ func serviceAccountToken() (string, error) {
 	Eventually(verifyTokenCreation).Should(Succeed())
 
 	return out, err
-}
+} */
 
 // getMetricsOutput retrieves and returns the logs from the curl pod used to access the metrics endpoint.
 func getMetricsOutput() (string, error) {
