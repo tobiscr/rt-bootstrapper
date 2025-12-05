@@ -1,6 +1,10 @@
 resources:
 - issuer.yaml
-- certificate-webhook.yaml
+- certificate.yaml
 
 configurations:
 - kustomizeconfig.yaml
+
+sortOptions:
+  order: fifo
+

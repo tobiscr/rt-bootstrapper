@@ -1,0 +1,21 @@
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  labels:
+    app.kubernetes.io/created-by: rt-bootstrapper
+    app.kubernetes.io/part-of: rt-bootstrapper
+    app.kubernetes.io/managed-by: kustomize
+  name: kyma
+  namespace: system
+spec:
+  commonName: rt-bootstrapper-service.kyma-system
+  dnsNames:
+  - rt-bootstrapper-webhook-service.kyma-system.svc
+  - rt-bootstrapper-webhook-service.kyma-system.svc.cluster.local
+  isCA: true
+  issuerRef:
+    name: kyma
+    namespace: system
+  secretRef:
+    name: rt-bootstrapper-webhook-cert
+    namespace: system
