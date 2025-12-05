@@ -353,17 +353,17 @@ var _ = Describe("Manager", Ordered, func() {
 	return out, err
 } */
 
-// getMetricsOutput retrieves and returns the logs from the curl pod used to access the metrics endpoint.
-func getMetricsOutput() (string, error) {
-	By("getting the curl-metrics logs")
-	cmd := exec.Command("kubectl", "logs", "curl-metrics", "-n", namespace)
-	return utils.Run(cmd)
-}
-
-// tokenRequest is a simplified representation of the Kubernetes TokenRequest API response,
-// containing only the token field that we need to extract.
-type tokenRequest struct {
-	Status struct {
-		Token string `json:"token"`
-	} `json:"status"`
-}
+//// getMetricsOutput retrieves and returns the logs from the curl pod used to access the metrics endpoint.
+//func getMetricsOutput() (string, error) {
+//	By("getting the curl-metrics logs")
+//	cmd := exec.Command("kubectl", "logs", "curl-metrics", "-n", namespace)
+//	return utils.Run(cmd)
+//}
+//
+//// tokenRequest is a simplified representation of the Kubernetes TokenRequest API response,
+//// containing only the token field that we need to extract.
+//type tokenRequest struct {
+//	Status struct {
+//		Token string `json:"token"`
+//	} `json:"status"`
+//}
