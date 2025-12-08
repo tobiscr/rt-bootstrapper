@@ -25,12 +25,12 @@ func (p masterSecret) Create(e event.TypedCreateEvent[client.Object]) bool {
 	secretNamespace := e.Object.GetNamespace()
 
 	args := []any{
-		"name", secretName,
-		"namespace", secretNamespace,
+		"secret-name", secretName,
+		"secret-namespace", secretNamespace,
 	}
 
 	accept := secretName == p.Name && secretNamespace == p.Namespace
-	p.log.With(args...).Debug("incomming create event", "accept", accept)
+	p.log.With(args...).Debug("incomming create secret event", "accept", accept)
 
 	return accept
 }
@@ -51,14 +51,14 @@ func (p masterSecret) Update(e event.TypedUpdateEvent[client.Object]) bool {
 	valNew := secretNew.Data[corev1.DockerConfigJsonKey]
 
 	args := []any{
-		"namespace", secretNew.Namespace,
-		"name", secretNew.Name,
+		"secret-name", secretNew.Name,
+		"secret-namespace", secretNew.Namespace,
 	}
 
 	idMatch := p.Name == secretNew.Name
 	accept := idMatch && !bytes.Equal(valNew, valOld)
 
-	p.log.With(args...).Debug("incomming update event", "accept", accept)
+	p.log.With(args...).Debug("incomming update secret event", "accept", accept)
 	return accept
 }
 
