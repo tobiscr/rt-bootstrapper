@@ -43,13 +43,25 @@ func defaultPod(update func(*corev1.Pod), features map[string]string) PodDefault
 	}
 }
 
+func alterImgRegistry(containers []corev1.Container, overrides map[string]string) {
+	for i := range containers {
+		containers[i].Image = k8s.AlterPodImageRegistry(
+			containers[i].Image,
+			overrides)
+
+		slog.With("overrides", overrides,
+			"image-name", containers[i].Image,
+			"container-name", containers[i].Name).Debug("image altered")
+	}
+}
+
 func BuildPodDefaulterAlterImgRegistry(overrides map[string]string) PodDefaulter {
 	alterPodImageRegistry := func(p *corev1.Pod) {
-		for i := range p.Spec.Containers {
-			slog.With("overrides", overrides).Debug("altering containter image")
-			p.Spec.Containers[i].Image = k8s.AlterPodImageRegistry(
-				p.Spec.Containers[i].Image,
-				overrides)
+		for _, containers := range [][]corev1.Container{
+			p.Spec.InitContainers,
+			p.Spec.Containers,
+		} {
+			alterImgRegistry(containers, overrides)
 		}
 	}
 

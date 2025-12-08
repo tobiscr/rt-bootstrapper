@@ -35,6 +35,7 @@ func (p masterSecret) Create(e event.TypedCreateEvent[client.Object]) bool {
 	return accept
 }
 
+// Delete - omit event
 func (p masterSecret) Delete(e event.TypedDeleteEvent[client.Object]) bool {
 	return false
 }
@@ -61,6 +62,7 @@ func (p masterSecret) Update(e event.TypedUpdateEvent[client.Object]) bool {
 	return accept
 }
 
+// Generic - omit event
 func (p masterSecret) Generic(e event.TypedGenericEvent[client.Object]) bool {
 	return false
 }

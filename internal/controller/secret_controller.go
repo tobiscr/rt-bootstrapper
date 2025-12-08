@@ -46,6 +46,10 @@ type SecretReconciler struct {
 
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;patch
 
+const (
+	logKey = "log-key"
+)
+
 func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
 	isMasterSecretUpdated := req.Namespace == r.Namespace && req.Name == r.Name
@@ -187,12 +191,12 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		"master-secret-namespace", r.Namespace)
 
 	p1 := &createNsPredicate{
-		log:                      slog.Default().WithGroup("namespace-predicate"),
+		log:                      slog.Default().With(logKey, "namespace-predicate"),
 		masterSecretNamspaceName: r.Namespace,
 	}
 
 	p2 := &masterSecret{
-		log:            slog.Default().WithGroup("master-secret-predicate"),
+		log:            slog.Default().With(logKey, "master-secret-predicate"),
 		NamespacedName: r.NamespacedName,
 	}
 
