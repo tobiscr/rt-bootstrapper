@@ -1,4 +1,12 @@
-> **NOTE:** This is a general template that you can use for a project README.md. Except for the mandatory sections, use only those sections that suit your use case but keep the proposed section order.
+[![REUSE status](https://api.reuse.software/badge/github.com/kyma-project/rt-bootstrapper)](https://api.reuse.software/info/github.com/kyma-project/rt-bootstrapper)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kyma-project/rt-bootstrapper)](https://goreportcard.com/report/github.com/kyma-project/rt-bootstrapper)
+[![unit tests](https://badgers.space/github/checks/kyma-project/rt-bootstrapper/main/unit-tests)](https://github.com/kyma-project/rt-bootstrapper/actions/workflows/unit-tests.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/kyma-project/rt-bootstrapper/badge.svg?branch=main)](https://coveralls.io/github/kyma-project/rt-bootstrapper?branch=main)
+[![golangci lint](https://badgers.space/github/checks/kyma-project/rt-bootstrapper/main/golangci-lint)](https://github.com/kyma-project/rt-bootstrapper/actions/workflows/lint.yaml)
+[![latest release](https://badgers.space/github/release/kyma-project/rt-bootstrapper)](https://github.com/kyma-project/rt-bootstrapper/releases/latest)
+
+ 
+> > **NOTE:** This is a general template that you can use for a project README.md. Except for the mandatory sections, use only those sections that suit your use case but keep the proposed section order.
 >
 > Mandatory sections: 
 > - `Overview`
@@ -7,14 +15,8 @@
 > - `Contributing` - do not change this!
 > - `Code of Conduct` - do not change this!
 >- `Licensing` - do not change this!
-[![REUSE status](https://api.reuse.software/badge/github.com/kyma-project/rt-bootstrapper)](https://api.reuse.software/info/github.com/kyma-project/rt-bootstrapper)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kyma-project/rt-bootstrapper)](https://goreportcard.com/report/github.com/kyma-project/rt-bootstrapper)
-[![unit tests](https://badgers.space/github/checks/kyma-project/rt-bootstrapper/main/unit-tests)](https://github.com/kyma-project/rt-bootstrapper/actions/workflows/unit-tests.yaml)
-[![Coverage Status](https://coveralls.io/repos/github/kyma-project/rt-bootstrapper/badge.svg?branch=main)](https://coveralls.io/github/kyma-project/rt-bootstrapper?branch=main)
-[![golangci lint](https://badgers.space/github/checks/kyma-project/rt-bootstrapper/main/golangci-lint)](https://github.com/kyma-project/rt-bootstrapper/actions/workflows/lint.yaml)
-[![latest release](https://badgers.space/github/release/kyma-project/rt-bootstrapper)](https://github.com/kyma-project/rt-bootstrapper/releases/latest)
 
-# {RT Bootstrapper}
+# RT Bootstrapper
 <!--- mandatory --->
 > Modify the title and insert the name of your project. Use Heading 1 (H1).
 
