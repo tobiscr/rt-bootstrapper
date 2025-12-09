@@ -3,7 +3,7 @@ data:
   rt-bootstrapper-config.json: |
     {
       "imagePullSecretName": "registry-credentials",
-      "imagePullSecretNamespace": "rt-bootstrapper-system",
+      "imagePullSecretNamespace": "kyma-system",
       "overrides": {
         "replace.me": "ghcr.io",
         "example.com": "ghcr.io"

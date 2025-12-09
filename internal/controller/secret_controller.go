@@ -46,15 +46,20 @@ type SecretReconciler struct {
 
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;patch
 
+const (
+	logID = "log-id"
+)
+
 func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
 	isMasterSecretUpdated := req.Namespace == r.Namespace && req.Name == r.Name
-	isCredentialsSecretUpdated := req.Namespace != "" && req.Name == r.Name
+	isCredentialsSecretUpdated := (req.Namespace != "" && req.Namespace != r.Namespace) && req.Name == r.Name
 	isNamespaceCreated := req.Namespace == ""
 
-	log := slog.Default().WithGroup("reconcile").With(
+	log := slog.Default().With(
+		logID, "reconcile",
 		"req", req,
-		"is-master-secret-updated", isCredentialsSecretUpdated,
+		"is-master-secret-updated", isMasterSecretUpdated,
 		"is-credentials-secret-updated", isCredentialsSecretUpdated,
 		"is-namespace-created", isNamespaceCreated,
 		"uuid", uuid.NewString(),
@@ -187,12 +192,12 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		"master-secret-namespace", r.Namespace)
 
 	p1 := &createNsPredicate{
-		log:                      slog.Default().WithGroup("namespace-predicate"),
+		log:                      slog.Default().With(logID, "namespace-predicate"),
 		masterSecretNamspaceName: r.Namespace,
 	}
 
 	p2 := &masterSecret{
-		log:            slog.Default().WithGroup("master-secret-predicate"),
+		log:            slog.Default().With(logID, "master-secret-predicate"),
 		NamespacedName: r.NamespacedName,
 	}
 
