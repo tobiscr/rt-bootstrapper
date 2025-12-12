@@ -18,7 +18,7 @@ The `RT-bootstrapper` component contains two functional parts:
 
 - Kubernetes Controller that watches for namespaces labeled for restricted markets and ensures that the required credentials secrets are present and synchronised in those namespaces.
 
-For information how to use and configure `RT-bootstrapper`, see the [user documentation](./docs/user/Readme.md).
+For information how to use and configure `RT-bootstrapper`, see the [user documentation](./docs/README.md).
 
 
 **Note:**
@@ -71,7 +71,7 @@ kubectl apply -f https://github.com/kyma-project/re-bootstrapper/releases/latest
 ## Usage
 
 To use the `RT-bootstrapper`, you need to label your Kubernetes namespaces and pods accordingly. The admission webhook will intercept the creation of these resources and apply the necessary configurations.
-For more information, see the [user documentation](./docs/user/Readme.md).
+For more information, see the [user documentation](./docs/user/README.md).
 
 ## Contributing
 
