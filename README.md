@@ -5,49 +5,76 @@
 [![golangci lint](https://badgers.space/github/checks/kyma-project/rt-bootstrapper/main/golangci-lint)](https://github.com/kyma-project/rt-bootstrapper/actions/workflows/lint.yaml)
 [![latest release](https://badgers.space/github/release/kyma-project/rt-bootstrapper)](https://github.com/kyma-project/rt-bootstrapper/releases/latest)
 
- 
-> > **NOTE:** This is a general template that you can use for a project README.md. Except for the mandatory sections, use only those sections that suit your use case but keep the proposed section order.
->
-> Mandatory sections: 
-> - `Overview`
-> - `Prerequisites`, if there are any requirements regarding hard- or software
-> - `Installation`
-> - `Contributing` - do not change this!
-> - `Code of Conduct` - do not change this!
->- `Licensing` - do not change this!
-
 # RT Bootstrapper
-<!--- mandatory --->
-> Modify the title and insert the name of your project. Use Heading 1 (H1).
+
+This repository contains the source code for the `RT-bootstrapper` Kyma component used to configure Kyma Runtime components on restricted markets infrastructure.
 
 ## Overview
-<!--- mandatory section --->
 
-> Provide a description of the project's functionality.
->
-> If it is an example README.md, describe what the example illustrates.
+The `RT-bootstrapper` component contains two functional parts:
+
+- Kubernetes admission webhook that intercepts the creation of pods and namespaces labeled for restricted markets. 
+  It modifies the pod specifications to include necessary configurations, modify image paths to use configured remote registry, and provides pull secrets with credentials.
+
+- Kubernetes Controller that watches for namespaces labeled for restricted markets and ensures that the required credentials secrets are present and synchronised in those namespaces.
+
+For information how to use and configure `RT-bootstrapper`, see the [user documentation](./docs/user/Readme.md).
+
+
+**Note:**
+> This component is implemented as part of Kyma Runtime delivery for restricted markets.  
+> Installing `RT-bootstrapper` on standard BTP managed Kyma Runtime or in self-managed Kyma Runtime cluster, may cause harm to your workloads.
 
 ## Prerequisites
 
-> List the requirements to run the project or example.
+- A managed Kyma Runtime instance running on BTP platform.
+- Access to Kyma Runtime cluster with kubeconfig.
 
-## Installation
+## Installation with Kyma Control Plane
 
-> Explain the steps to install your project. If there are multiple installation options, mention the recommended one and include others in a separate document. Create an ordered list for each installation task.
->
-> If it is an example README.md, describe how to build, run locally, and deploy the example. Format the example as code blocks and specify the language, highlighting where possible. Explain how you can validate that the example ran successfully. For example, define the expected output or commands to run which check a successful deployment.
->
-> Add subsections (H3) for better readability.
+In restricted market environment, the `RT-bootstrapper` is installed and configured automatically by Kyma Control Plane on all provisioned Kyma Runtimes.
 
-## Usage
+## Installation with kubectl
 
-> Explain how to use the project. You can create multiple subsections (H3). Include the instructions or provide links to the related documentation.
+Enable the `RT-bootstrapper` component in your Kyma cluster with kubectl by applying a release manifest.  
+
+```bash
+kubectl apply -f https://github.com/kyma-project/re-bootstrapper/releases/latest/download/rt-bootstrapper.yaml
+```
 
 ## Development
 
-> Add instructions on how to develop the project or example. It must be clear what to do and, for example, how to trigger the tests so that other contributors know how to make their pull requests acceptable. Include the instructions or provide links to related documentation.
+### Prerequisites
+
+- Access to a Kubernetes cluster
+- [Go](https://go.dev/)
+- [k3d](https://k3d.io/)
+- [Docker](https://www.docker.com/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [Kubebuilder](https://book.kubebuilder.io/)
+- [yq](https://mikefarah.gitbook.io/yq)
+
+### Installation in the k3d Cluster Using Make Targets
+
+1. Clone the project.
+
+    ```bash
+    git clone https://github.com/kyma-project/rt-boostrapper.git && cd rt-boostrapper/
+    ```
+
+2. Create a new k3d cluster and run `RT-bootstrapper` from the main branch:
+
+    ```bash
+    k3d cluster create test-cluster
+    make deploy
+    ```
+## Usage
+
+To use the `RT-bootstrapper`, you need to label your Kubernetes namespaces and pods accordingly. The admission webhook will intercept the creation of these resources and apply the necessary configurations.
+For more information, see the [user documentation](./docs/user/Readme.md).
 
 ## Contributing
+
 <!--- mandatory section - do not change this! --->
 
 See the [Contributing Rules](CONTRIBUTING.md).
@@ -57,7 +84,8 @@ See the [Contributing Rules](CONTRIBUTING.md).
 
 See the [Code of Conduct](CODE_OF_CONDUCT.md) document.
 
-## Licensing
+## License
+
 <!--- mandatory section - do not change this! --->
 
 See the [license](./LICENSE) file.
