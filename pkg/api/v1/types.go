@@ -2,24 +2,63 @@ package v1
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
+	"time"
+
+	"github.com/go-playground/validator/v10"
 )
 
 const (
 	AnnotationAlterImgRegistry = "rt-cfg.kyma-project.io/alter-img-registry"
 	AnnotationSetPullSecret    = "rt-cfg.kyma-project.io/add-img-pull-secret"
-	AnnotationOutdated         = "rt-cfg.kyma-project.io/outdated"
 	FiledManager               = "rt-bootstrapper"
 )
 
 type Config struct {
-	Overrides                map[string]string `json:"overrides"`
-	ImagePullSecretName      string            `json:"imagePullSecretName"`
-	ImagePullSecretNamespace string            `json:"imagePullSecretNamespace"`
+	Overrides                map[string]string `json:"overrides" validate:"required"`
+	ImagePullSecretName      string            `json:"imagePullSecretName" validate:"required"`
+	ImagePullSecretNamespace string            `json:"imagePullSecretNamespace" validate:"required"`
+	SecretSyncInterval       Duration          `json:"secretSyncInterval" validate:"required"`
+}
+
+type Duration time.Duration
+
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Duration(d).String())
+}
+
+func (d *Duration) UnmarshalJSON(p []byte) error {
+	var v any
+	if err := json.Unmarshal(p, &v); err != nil {
+		return err
+	}
+	switch value := v.(type) {
+	case float64:
+		*d = Duration(time.Duration(value))
+		return nil
+	case string:
+		tmp, err := time.ParseDuration(value)
+		if err != nil {
+			return err
+		}
+
+		*d = Duration(tmp)
+		return nil
+	default:
+		return errors.New("invalid duration")
+	}
 }
 
 func NewConfig(r io.Reader) (*Config, error) {
 	var out Config
 	err := json.NewDecoder(r).Decode(&out)
-	return &out, err
+
+	if err != nil {
+		return nil, err
+	}
+
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	return &out, validate.Struct(out)
+
 }

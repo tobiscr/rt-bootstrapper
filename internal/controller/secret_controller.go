@@ -65,10 +65,15 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		"uuid", uuid.NewString(),
 	)
 
-	log.Debug("reconciling request")
+	log.Debug("fetching master-secret", "namespaced-name", r.NamespacedName)
+
+	var masterSecret corev1.Secret
+	if err := r.Get(ctx, r.NamespacedName, &masterSecret); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	if isMasterSecretUpdated {
-		log.Debug("attempting to synchronize all known secrets")
+		log.Debug("attempting to synchronize secrets")
 
 		var namespaceList corev1.NamespaceList
 		if err := r.List(ctx, &namespaceList); err != nil {
@@ -82,25 +87,14 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				continue
 			}
 
-			credentialsSecret := corev1.Secret{
-				TypeMeta: v1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: corev1.SchemeGroupVersion.String(),
-				},
-				ObjectMeta: v1.ObjectMeta{
-					Name:      r.Name,
-					Namespace: namespace.Name,
-					Annotations: map[string]string{
-						apiv1.AnnotationOutdated: "true",
-					},
-				},
-			}
+			credentialsSecret := createCredentialSecret(r.Name, namespace.Name,
+				masterSecret.Data[corev1.DockerConfigJsonKey])
 
-			if err := r.Patch(ctx, &credentialsSecret, client.Apply, &client.PatchOptions{
+			err := r.Patch(ctx, credentialsSecret, client.Apply, &client.PatchOptions{
 				FieldManager: apiv1.FiledManager,
-			}); client.IgnoreNotFound(err) != nil {
-				// if credentials-secret is not found it will be created
-				// by reconciled in create new namespace event
+			})
+
+			if err != nil {
 				errors = append(errors, err.Error())
 				continue
 			}
@@ -121,64 +115,25 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if isCredentialsSecretUpdated {
 		log.Debug("attempting to synchroinize secret")
-		var masterSecret corev1.Secret
-		if err := r.Get(ctx, r.NamespacedName, &masterSecret); err != nil {
-			return ctrl.Result{}, err
-		}
 
-		credentialsSecret := corev1.Secret{
-			TypeMeta: v1.TypeMeta{
-				Kind:       "Secret",
-				APIVersion: corev1.SchemeGroupVersion.String(),
-			},
-			ObjectMeta: v1.ObjectMeta{
-				Name:        r.Name,
-				Namespace:   req.Namespace,
-				Annotations: map[string]string{},
-			},
-			Data: map[string][]byte{
-				corev1.DockerConfigJsonKey: masterSecret.Data[corev1.DockerConfigJsonKey],
-			},
-		}
+		credentialsSecret := createCredentialSecret(r.Name, req.Namespace,
+			masterSecret.Data[corev1.DockerConfigJsonKey])
 
-		return ctrl.Result{}, r.Patch(ctx, &credentialsSecret, client.Apply, &client.PatchOptions{
+		return ctrl.Result{}, r.Patch(ctx, credentialsSecret, client.Apply, &client.PatchOptions{
 			FieldManager: apiv1.FiledManager,
 			Force:        ptr.To(true),
 		})
 	}
 
 	if isNamespaceCreated {
-		log.Debug("fetching master-secret", "namespaced-name", r.NamespacedName)
-		var masterSecret corev1.Secret
-		if err := r.Get(ctx, r.NamespacedName, &masterSecret); err != nil {
-			return ctrl.Result{}, err
-		}
+		log.Debug("attempting to create secret")
 
-		credentialsSecret := corev1.Secret{
-			TypeMeta: v1.TypeMeta{
-				Kind:       "Secret",
-				APIVersion: corev1.SchemeGroupVersion.String(),
-			},
-			ObjectMeta: v1.ObjectMeta{
-				Name:      r.Name,
-				Namespace: req.Name,
-			},
-			Data: map[string][]byte{
-				corev1.DockerConfigJsonKey: masterSecret.Data[corev1.DockerConfigJsonKey],
-			},
-		}
+		credentialsSecret := createCredentialSecret(r.Name, req.Name,
+			masterSecret.Data[corev1.DockerConfigJsonKey])
 
-		log.Debug("attempting to create secret",
-			"name", credentialsSecret.Name,
-			"namespace", credentialsSecret.Namespace)
-
-		if err := r.Patch(ctx, &credentialsSecret, client.Apply, &client.PatchOptions{
+		return ctrl.Result{}, r.Patch(ctx, credentialsSecret, client.Apply, &client.PatchOptions{
 			FieldManager: apiv1.FiledManager,
-			Force:        ptr.To(true),
-		}); client.IgnoreNotFound(err) != nil {
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, nil
+		})
 	}
 
 	log.Warn("unhandled request")
@@ -210,4 +165,21 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(p2)).
 		Named("docker-credentials").
 		Complete(r)
+}
+
+func createCredentialSecret(name, ns string, data []byte) *corev1.Secret {
+	return &corev1.Secret{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: corev1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Data: map[string][]byte{
+			corev1.DockerConfigJsonKey: data,
+		},
+		Type: corev1.SecretTypeDockerConfigJson,
+	}
 }
