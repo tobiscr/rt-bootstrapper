@@ -18,7 +18,11 @@ patches:
   - path: manager_webhook_patch.yaml
     target:
       kind: Deployment
-      
+
+  - path: mutating_webhook_configuration_patch.yaml
+    target:
+      kind: MutatingWebhookConfiguration
+
 sortOptions:
   order: fifo
 
