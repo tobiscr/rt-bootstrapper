@@ -4,6 +4,7 @@ data:
     {
       "imagePullSecretName": "registry-credentials",
       "imagePullSecretNamespace": "kyma-system",
+      "secretSyncInterval": "1m",
       "overrides": {
         "replace.me": "ghcr.io",
         "example.com": "ghcr.io"

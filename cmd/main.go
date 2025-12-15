@@ -262,7 +262,7 @@ func main() {
 			Name:      cfg.ImagePullSecretName,
 			Namespace: cfg.ImagePullSecretNamespace,
 		},
-		SecretSyncInterval: time.Minute,
+		SecretSyncInterval: time.Duration(cfg.SecretSyncInterval),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Secret")
 		os.Exit(1)
