@@ -39,7 +39,7 @@ In restricted market environment, the `RT-bootstrapper` is installed and configu
 Enable the `RT-bootstrapper` component in your Kyma cluster with kubectl by applying a release manifest.  
 
 ```bash
-kubectl apply -f https://github.com/kyma-project/re-bootstrapper/releases/latest/download/rt-bootstrapper.yaml
+kubectl apply -f https://github.com/kyma-project/rt-bootstrapper/releases/latest/download/rt-bootstrapper.yaml
 ```
 ## Architectural Decisions
 
