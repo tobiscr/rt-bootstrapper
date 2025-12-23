@@ -12,6 +12,7 @@ import (
 const (
 	AnnotationAlterImgRegistry = "rt-cfg.kyma-project.io/alter-img-registry"
 	AnnotationSetPullSecret    = "rt-cfg.kyma-project.io/add-img-pull-secret"
+	AnnotationDefaulted        = "rt-bootstrapper.kyma-project.io/defaulted"
 	FiledManager               = "rt-bootstrapper"
 )
 

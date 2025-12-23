@@ -55,7 +55,7 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 	}
 
 	defaulter := podCustomDefaulter{
-		defaulters: []func(*corev1.Pod, map[string]string) error{
+		defaulters: []func(*corev1.Pod, map[string]string) (bool, error){
 			d1,
 			d2,
 		},
@@ -78,7 +78,7 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as it is used only for temporary operations and does not need to be deeply copied.
 type podCustomDefaulter struct {
-	defaulters []func(*corev1.Pod, map[string]string) error
+	defaulters []func(*corev1.Pod, map[string]string) (bool, error)
 	GetNsAnnotations
 }
 
@@ -116,6 +116,7 @@ func (d *podCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (e
 		return err
 	}
 
+	var podDefaulted bool
 	for i, defaulter := range d.defaulters {
 		kvals := keysAndValues(pod)
 		slog.Default().WithGroup("pod").With(kvals...).
@@ -123,10 +124,27 @@ func (d *podCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (e
 			WithGroup("for").Debug("invoking defaulter",
 			"i", fmt.Sprintf("%d", i))
 
-		if err := defaulter(pod, nsAnnotations); err != nil {
+		podModified, err := defaulter(pod, nsAnnotations)
+		if err != nil {
 			return err
 		}
+
+		if !podModified {
+			continue
+		}
+
+		podDefaulted = true
 	}
+
+	if !podDefaulted {
+		return nil
+	}
+
+	if pod.Annotations == nil {
+		pod.Annotations = map[string]string{}
+	}
+	pod.Annotations[apiv1.AnnotationDefaulted] = "true"
+
 	return nil
 }
 
