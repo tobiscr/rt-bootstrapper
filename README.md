@@ -7,21 +7,21 @@
 
 # RT Bootstrapper
 
-This repository contains the source code for the RT Bootstrapper Kyma component used to configure Kyma runtime components on restricted markets infrastructure.
+This repository contains the source code for the RT Bootstrapper Kyma component used to configure Kyma runtime components running in markets with individual infrastructure setups.
 
 ## Overview
 
 RT Bootstrapper contains two functional parts:
 
-- Kubernetes admission webhook that intercepts the creation of Pods and namespaces labeled for restricted markets. 
+- Kubernetes admission webhook that intercepts the creation of Pods.
   It modifies the Pod specifications to include necessary configurations, modifies image paths to use the configured remote registry, and provides pull secrets with credentials.
 
-- Kubernetes Controller that watches for namespaces labeled for restricted markets and ensures that the secrets with required credentials are present and synchronized in those namespaces.
+- Kubernetes Controller that watches for namespaces and ensures that the secrets with required credentials are present and synchronized in those namespaces.
 
 
 
 > [!NOTE]
-> This component is implemented as part of the Kyma runtime delivery for restricted markets.  
+> This component is implemented as part of the Kyma runtime delivery.  
 > Installing RT Bootstrapper in SAP BTP, Kyma runtime, or in a self-managed Kyma runtime cluster may negatively impact your workloads.
 
 ## Installation
@@ -33,7 +33,7 @@ RT Bootstrapper contains two functional parts:
 
 ### Installation with Kyma Control Plane
 
-In the restricted markets environment, RT Bootstraper is installed and configured automatically by Kyma Control Plane in all provisioned Kyma runtimes.
+In environment with individual infrastructure setups, RT Bootstrapper is installed and configured automatically by Kyma Control Plane in all provisioned Kyma runtimes.
 
 ### Installation with kubectl
 
