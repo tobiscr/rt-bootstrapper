@@ -7,70 +7,71 @@
 
 # RT Bootstrapper
 
-This repository contains the source code for the `RT-bootstrapper` Kyma component used to configure Kyma Runtime components on restricted markets infrastructure.
+This repository contains the source code for the RT Bootstrapper Kyma component used to configure Kyma runtime components on restricted markets infrastructure.
 
 ## Overview
 
-The `RT-bootstrapper` component contains two functional parts:
+RT Bootstrapper contains two functional parts:
 
-- Kubernetes admission webhook that intercepts the creation of pods and namespaces labeled for restricted markets. 
-  It modifies the pod specifications to include necessary configurations, modify image paths to use configured remote registry, and provides pull secrets with credentials.
+- Kubernetes admission webhook that intercepts the creation of Pods and namespaces labeled for restricted markets. 
+  It modifies the Pod specifications to include necessary configurations, modifies image paths to use the configured remote registry, and provides pull secrets with credentials.
 
-- Kubernetes Controller that watches for namespaces labeled for restricted markets and ensures that the required credentials secrets are present and synchronised in those namespaces.
-
-For information how to use and configure `RT-bootstrapper`, see the [user documentation](./docs/README.md).
+- Kubernetes Controller that watches for namespaces labeled for restricted markets and ensures that the secrets with required credentials are present and synchronized in those namespaces.
 
 
-**Note:**
-> This component is implemented as part of Kyma Runtime delivery for restricted markets.  
-> Installing `RT-bootstrapper` on standard BTP managed Kyma Runtime or in self-managed Kyma Runtime cluster, may cause harm to your workloads.
 
-## Prerequisites
+> [!NOTE]
+> This component is implemented as part of the Kyma runtime delivery for restricted markets.  
+> Installing RT Bootstrapper in SAP BTP, Kyma runtime, or in a self-managed Kyma runtime cluster may negatively impact your workloads.
 
-- A managed Kyma Runtime instance running on BTP platform.
-- Access to Kyma Runtime cluster with kubeconfig.
+## Installation
 
-## Installation with Kyma Control Plane
+### Prerequisites
 
-In restricted market environment, the `RT-bootstrapper` is installed and configured automatically by Kyma Control Plane on all provisioned Kyma Runtimes.
+- SAP BTP, Kyma runtime instance
+- Access to the Kyma runtime cluster with kubeconfig
 
-## Installation with kubectl
+### Installation with Kyma Control Plane
 
-Enable the `RT-bootstrapper` component in your Kyma cluster with kubectl by applying a release manifest.  
+In the restricted markets environment, RT Bootstraper is installed and configured automatically by Kyma Control Plane in all provisioned Kyma runtimes.
+
+### Installation with kubectl
+
+To enable RT Bootstrapper in your Kyma cluster, apply the release manifest using kubectl:  
 
 ```bash
 kubectl apply -f https://github.com/kyma-project/rt-bootstrapper/releases/latest/download/rt-bootstrapper.yaml
 ```
 ## Architectural Decisions
 
-Several architectural decision were made within the Kyma architecture meeting and also during the implementation phase (primarily caused by technical constraints which were not visible from the beginning and their solution required an in-time decision).
+Several architectural decisions were made during the Kyma architecture meeting and the implementation phase. These decisions were primarily driven by technical constraints and the need for timely solutions.
 
-### Manipulation is limited to pods
-The webhook will only manipulate pod resources. Other resources (e.g. StatefulSets, DaemonSets, Deployments etc.) will be ignored. This is required to avoid conflicts between the KLM and KIM: KLM is regularly processing the resources it was deploying (e.g. deployments of operators). If the webhook would modify these deployments, the KLM would revert the modifications regularly and both processes would "fight" against each other. To avoid such a situation, we agreed that KLM will never deploy pods, but high-level resources like deployments, DaemonSets, StatefulSets etc. The drawback of this decision is that the deployed pod can include different vlaues compared to its definition within a Deployment, StatefulSet, DeamonSet etc. which can be confusing for engineers/developers who are reviewing a pod definition in K8s and are not aware about the webhook existence and his adjustments.
+### Manipulation is Limited to Pods
+The webhook only manipulates Pod resources. Other resources, such as StatefulSets, DaemonSets, and Deployments, are ignored. This is required to avoid conflicts between Kyma Lifecycle Manager (KLM) and Kyma Infrastructure Manager (KIM). KLM regularly processes the resources it deployed (for example, Deployments of operators). If the webhook were to modify these deployments, the KLM would revert the modifications regularly, and both processes would "fight" against each other. To avoid such a situation, we agreed that KLM will never deploy Pods, but high-level resources like Deployments, DaemonSets, StatefulSets, etc. The drawback of this decision is that the deployed Pod can include different values compared to its definition within a Deployment, StatefulSet, DaemonSet, etc., which may be confusing for engineers or developers reviewing a Pod definition in Kubernetes who are unaware of the webhook's existence and its adjustments.
 
-### Non-blocking webhook
-The admission webhook must be configured as non-blocking processing step for API-server requests. This means, the API server will continue the request processing when the webhook couldn't be invoked. This decision ensures that the API server will not stop the requests processing when the webhook is (temporarily) not available. The decision introduces the risk that pods get scheduled without being manipulated.
+### Non-Blocking Webhook
+The admission webhook must be configured as a non-blocking processing step for API-server requests. This means that the API server continues processing the request when the webhook cannot be invoked. This decision ensures that the API server continues to process requests even when the webhook is temporarily unavailable. The decision introduces the risk that Pods get scheduled without being manipulated.
 
-### Detection of non-manipulated resources is not part of the webhook
-We agreed that the webhook is exclusively responsible for manipulating the manifest of pods during their creation phase. If a pod gets scheduled without being processed by the webhook (e.g. webhook was temporarily down), the pod could miss critical adjustments and in worst case not come up. To overcome this scenario, a house-keeping process (outside of the webhook) will be implemented which regularly scans all pods for missing manipulations. Such pods will be restarted by the housekeeping process (during the re-creation, the webhook will be invoked and the manipulations are getting applied).
+### Detection of Non-Manipulated Resources Is Not Part of the Webhook
+We agreed that the webhook is exclusively responsible for manipulating the manifest of Pods during their creation phase. If a Pod gets scheduled without being processed by the webhook (for example, when the webhook is temporarily down), the Pod might miss critical adjustments and, in the worst case, may not start up properly. To address this issue, a housekeeping process implemented outside of the webhook regularly scans all Pods for any missing manipulations. If such Pods are identified, the housekeeping process restarts them (during the re-creation, the webhook is invoked, and the manipulations are applied).
 
-### All pods will be scanned by the webhook
-We agreed that all pods will be processed and manipulated by the webhook. This includes Kyma and customer workloads. It's also not required to annotate / label the pod or namespace to activate this behaviour. But customer have the option to disable this mechanism by annotations (see next point).
+### The Webhook Scans All Pods
+We agreed that all Pods are processed and manipulated by the webhook, including both Kyma and customer workloads. It's not required to annotate or label a Pod or a namespace to activate this behaviour. However, customers have the option to disable this mechanism using annotations (see [Webhook Configuration](#weebhook-configuration).
 
-### Webhook configuration
-The webhook will retrieve a default configuration (provided by KIM) which defines the amount of manipulations it has to apply for each pod. This configuration cannot be modified by workloads or customers. But it will be possible to disable the webhook manipulations ("Opt-Out" approach) by setting an annotation either on a pod (to disable the manipulation for this particular pod) or on a namespace (this disables the manipulation of all pods within the namespace). The webhook decides whether a manipulation will be applied in following precedence (first finding wins):
+### Webhook Configuration
+The webhook retrieves a default configuration (provided by KIM) that defines the number of manipulations it must apply to each Pod. Customers or other workloads cannot modify this configuration. However, it is possible to disable webhook manipulations and use the opt-out approach by setting an annotation on either a Pod or a namespace. Setting the annotation on a Pod disables the manipulation for this particular Pod, and setting the annotation on a namespace disables the manipulation of all Pods within the namespace. The webhook applies the manipulation using the following precedence, where the first finding takes priority:
 
-   1. Check for annotation on pod level
-   2. Check  annotation on namespace (disables the manipulation of all pods within this namespace)
-   3. Default configuration
+   1. Check for the annotation on the Pod level.
+   2. Check for the annotation on the namespace level.
+   3. Apply the default configuration.
 
-### Applied manipulations
-The webhook supports multiple manipulations. Which manipulation will be used can be configured by its default configuration (which is managed by KIM). Follow manipulations are supported:
-   * Image registry adjustment: render the image name to inject a different container-registry. Private registries are supported and, if needed, an image-pull secret will also be injected into the pod manifest.
-   * CA Bundle volume: Mounting the CA Bundle in a pod (needed for NS2 primarily)
+### Applied Manipulations
+The webhook supports multiple manipulations. The default configuration, managed by KIM, determines which manipulation is used. The following manipulations are supported:
+   * Image registry adjustment: Renders the image name to inject a different container registry. Private registries are supported, and if needed, an imagePullSecret is also injected into the Pod manifest.
+   * CA Bundle volume: Mounts the CA Bundle in a Pod (needed primarily for NS2).
 
-### Pull-Secret Synchronisation
-Private container registries require a pull secret.  KIM will ensure the latest pull-secret will become available within the `kyma-system` namespace. The name of the pull-secret will be static and not change over time, so that other compoents can use the name as unique identifier. This pull-secret has to be replicated into all namespaces (needed because Kyma has workloads which can be deployed in any namespace like Istio-sidecar or serverless and pull-secrets are namespace scoped). The webhook will include a dedicated controller which ensures that the secret will be available and synchronised in all namespaces.
+### Pull Secret Synchronisation
+Private container registries require a pull secret. KIM ensures that the latest pull secret becomes available within the `kyma-system` namespace. The name of the pull secret is static and does not change over time, allowing other components to use it as a unique identifier. This pull secret must be replicated across all namespaces. This is required because Kyma workloads, such as Istio sidecars or serverless, can be deployed in any namespace, and pull secrets are namespace-scoped. The webhook includes a dedicated controller that ensures the secret is available and synchronized in all namespaces.
 ## Development
 
 ### Prerequisites
@@ -91,7 +92,7 @@ Private container registries require a pull secret.  KIM will ensure the latest 
     git clone https://github.com/kyma-project/rt-boostrapper.git && cd rt-boostrapper/
     ```
 
-2. Create a new k3d cluster and run `RT-bootstrapper` from the main branch:
+2. Create a new k3d cluster and run RT Bootstrapper from the main branch:
 
     ```bash
     k3d cluster create test-cluster
@@ -99,9 +100,8 @@ Private container registries require a pull secret.  KIM will ensure the latest 
     ```
 ## Usage
 
-To use the `RT-bootstrapper`, you need to label your Kubernetes namespaces and pods accordingly.   
-The admission webhook will intercept the creation of these resources and apply the necessary configurations.    
-For more information, see the [user documentation](./docs/user/README.md).
+To use RT Bootstrapper, label your Kubernetes namespaces and Pods accordingly.   
+The admission webhook intercepts the creation of these resources and applies the necessary configurations.
 
 ## Contributing
 
