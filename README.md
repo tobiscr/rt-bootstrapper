@@ -33,7 +33,7 @@ RT Bootstrapper contains two functional parts:
 
 ### Installation with Kyma Control Plane
 
-In environment with individual infrastructure setups, RT Bootstrapper is installed and configured automatically by Kyma Control Plane in all provisioned Kyma runtimes.
+In environments with individual infrastructure setups, RT Bootstrapper is installed and configured automatically by Kyma Control Plane in all provisioned Kyma runtimes.
 
 ### Installation with kubectl
 
