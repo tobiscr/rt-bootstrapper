@@ -42,7 +42,7 @@ jobs:
     steps:
       - name: Setup k3d cluster, Docker registry and rt-bootstrapper controller
         run: |
-          cd .github/helpers
+          cd hack/rt-cicd-tests
           chmod +x ./setup-k3d-registry-bootstrapper.sh
           ./setup-k3d-registry-bootstrapper.sh
         shell: bash
