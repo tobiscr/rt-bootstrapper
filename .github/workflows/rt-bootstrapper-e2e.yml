@@ -36,6 +36,7 @@ jobs:
         run: echo "latest=latest" >> $GITHUB_OUTPUT
 
   rt-bootstrapper-e2e:
+    needs: setup
     permissions:
       contents: read
     runs-on: ubuntu-latest
