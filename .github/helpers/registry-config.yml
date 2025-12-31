@@ -1,0 +1,8 @@
+mirrors:
+  "localhost:5001":
+    endpoint:
+      - "http://my-private-registry:5000"
+configs:
+  "localhost:5001":
+    tls:
+      insecure_skip_verify: true
