@@ -42,8 +42,7 @@ jobs:
     steps:
       - name: Setup k3d cluster, Docker registry and rt-bootstrapper controller
         run: |
-          pwd
-          cd ..
-          chmod +x ./helpers/setup-k3d-registry-bootstrapper.sh
-          ./helpers/setup-k3d-registry-bootstrapper.sh
+          cd .github/helpers
+          chmod +x ./setup-k3d-registry-bootstrapper.sh
+          ./setup-k3d-registry-bootstrapper.sh
         shell: bash
