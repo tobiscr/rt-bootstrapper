@@ -4,7 +4,6 @@ on:
     types: [opened, synchronize, reopened]
     paths-ignore:
       - .reuse
-      - hack/
       - LICENSES/
       - LICENSE
       - .gitignore
@@ -15,35 +14,16 @@ permissions:
   contents: read # This is required for actions/checkout
 
 jobs:
-  setup:
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tag.outputs.tag || '' }}
-      latest: ${{ steps.latest.outputs.latest || '' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-      - id: tag
-        if: github.event_name == 'push' && github.ref_type == 'tag'
-        run: echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-      - id: latest
-        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name == 'push'
-        run: echo "latest=latest" >> $GITHUB_OUTPUT
-
-  rt-bootstrapper-e2e:
-    needs: setup
+  rt-bootstrapper-registry-check:
     permissions:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - name: Setup k3d cluster, Docker registry and rt-bootstrapper controller
-        run: |
+    - name: Clone the code
+      uses: actions/checkout@v4
+    - name: Setup k3d cluster, Docker registry and rt-bootstrapper controller
+      run: |
           cd hack/rt-cicd-tests
           chmod +x ./setup-k3d-registry-bootstrapper.sh
           ./setup-k3d-registry-bootstrapper.sh
-        shell: bash
+      shell: bash
