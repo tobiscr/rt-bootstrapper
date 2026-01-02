@@ -66,7 +66,7 @@ jobs:
 
       - name: Install the latest version of K3D
         env:
-          K3D_VERSION: v5.6.0
+          K3D_VERSION: v5.8.3
         run: |
           mkdir -p $HOME/bin
           curl -Lo $HOME/bin/k3d https://github.com/k3d-io/k3d/releases/download/${{env.K3D_VERSION}}/k3d-linux-amd64
