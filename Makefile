@@ -65,6 +65,9 @@ test: manifests generate fmt vet setup-envtest ## Run tests.
 # CertManager is installed by default; skip with:
 # - CERT_MANAGER_INSTALL_SKIP=true
 K3D_CLUSTER ?= rt-bootstrapper-test-e2e
+K3D_IMAGE ?= rancher/k3s:v1.33.6-k3s1
+K3D_ARGS  ?= --k3s-arg '--kube-apiserver-arg=feature-gates=ClusterTrustBundle=true,ClusterTrustBundleProjection=true@server:*' \
+	     --k3s-arg '--kube-apiserver-arg=runtime-config=certificates.k8s.io/v1beta1/clustertrustbundles=true@server:*'
 
 .PHONY: setup-test-e2e
 setup-test-e2e: ## Set up a Kind cluster for e2e tests if it does not exist
@@ -77,7 +80,7 @@ setup-test-e2e: ## Set up a Kind cluster for e2e tests if it does not exist
 			echo "K3D cluster '$(K3D_CLUSTER)' already exists. Skipping creation." ;; \
 		*) \
 			echo "Creating K3D cluster '$(K3D_CLUSTER)'..."; \
-			$(K3D) cluster create $(K3D_CLUSTER) ;; \
+			$(K3D) cluster create --image=$(K3D_IMAGE) $(K3D_ARGS) $(K3D_CLUSTER) ;; \
 	esac
 
 .PHONY: test-e2e

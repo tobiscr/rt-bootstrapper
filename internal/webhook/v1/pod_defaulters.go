@@ -2,6 +2,7 @@ package v1
 
 import (
 	"log/slog"
+	"reflect"
 	"slices"
 
 	"github.com/kyma-project/rt-bootstrapper/internal/webhook/k8s"
@@ -17,6 +18,9 @@ var (
 	}
 	annotationsSetPullSecret = map[string]string{
 		apiv1.AnnotationSetPullSecret: "false",
+	}
+	annotationAddClusterTrustBundle = map[string]string{
+		apiv1.AnnotationAddClusterTrustBundle: "false",
 	}
 )
 
@@ -95,4 +99,68 @@ func BuildPodDefaulterAddImagePullSecrets(secretName string) PodDefaulter {
 	}
 
 	return defaultPod(addImgPullSecret, annotationsSetPullSecret)
+}
+
+func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping) PodDefaulter {
+	slog.Debug("building volume", mapping.KeysAndValues()...)
+
+	vol := mapping.ClusterTrustedBundle()
+
+	addVolumeMount := func(modified bool, p *corev1.Pod) bool {
+
+		size := len(p.Spec.Containers)
+		results := make([]bool, size)
+
+		for i, c := range p.Spec.Containers {
+			index := slices.IndexFunc(c.VolumeMounts, func(vm corev1.VolumeMount) bool {
+				return vm.Name == mapping.Name
+			})
+
+			if index == -1 {
+				// volume mount does not exist, add it
+				vm := mapping.VolumeMount()
+				p.Spec.Containers[i].VolumeMounts = append(c.VolumeMounts, vm)
+				results[i] = true
+				slog.Debug("volume mount added")
+				continue
+			}
+
+			if reflect.DeepEqual(c.VolumeMounts[index], vol) {
+				results[i] = false
+				slog.Debug("volume already mounted, nothing to do")
+				continue
+			}
+
+			p.Spec.Volumes[index] = vol
+			slog.Debug("volume mount replaced")
+			results[i] = true
+		}
+
+		return modified || slices.Contains(results, true)
+	}
+
+	addClusterTrustBundle := func(p *corev1.Pod) bool {
+		index := slices.IndexFunc(p.Spec.Volumes, func(v corev1.Volume) bool {
+			return v.Name == mapping.Name
+		})
+
+		if index == -1 {
+			// volume does not exist, add it
+			p.Spec.Volumes = append(p.Spec.Volumes, vol)
+			slog.Debug("volume added")
+			return addVolumeMount(true, p)
+		}
+
+		if reflect.DeepEqual(p.Spec.Volumes[index], vol) {
+			slog.Debug("equal volume found, nothing to do")
+			return addVolumeMount(false, p)
+		}
+
+		p.Spec.Volumes[index] = vol
+		slog.Debug("volume replaced")
+
+		return addVolumeMount(true, p)
+	}
+
+	return defaultPod(addClusterTrustBundle, annotationAddClusterTrustBundle)
 }
