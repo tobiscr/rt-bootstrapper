@@ -61,7 +61,7 @@ var _ = Describe("Pod Webhook", func() {
 		})
 
 		var defaulter = podCustomDefaulter{
-			defaulters: []func(*corev1.Pod, map[string]string) error{
+			defaulters: []func(*corev1.Pod, map[string]string) (bool, error){
 				d1, d2,
 			},
 			GetNsAnnotations: func(_ context.Context, name string) (map[string]string, error) {

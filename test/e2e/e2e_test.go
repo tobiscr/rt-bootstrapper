@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"time"
 
+	apiv1 "github.com/kyma-project/rt-bootstrapper/pkg/api/v1"
 	"github.com/kyma-project/rt-bootstrapper/test/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -74,8 +75,10 @@ var _ = Describe("Manager", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
 
 		By("creating master-password secret")
-		cmd = exec.Command("kubectl", "create", "secret", "generic", "registry-credentials",
-			"--from-literal=.dockerconfigjson=admin123",
+		cmd = exec.Command("kubectl", "create", "secret", "docker-registry", "registry-credentials",
+			"--docker-username=test",
+			"--docker-password=aGktdGhlcmU=",
+			"--docker-server=test.me.plz",
 			"-n", namespace)
 
 		_, err = utils.Run(cmd)
@@ -338,6 +341,7 @@ var _ = Describe("Manager", Ordered, func() {
 			Expect(pod.Spec.ImagePullSecrets).Should(ContainElement(corev1.LocalObjectReference{
 				Name: "registry-credentials",
 			}))
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
 
 			cmd = exec.Command("kubectl", "get", "secret",
 				"-n", testNamespace)
@@ -372,7 +376,9 @@ var _ = Describe("Manager", Ordered, func() {
 
 			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
+
 			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
 			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
 				Name: "registry-credentials",
 			}))
@@ -406,12 +412,13 @@ var _ = Describe("Manager", Ordered, func() {
 			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
 			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
 				Name: "registry-credentials",
 			}))
 		})
 
-		It("should just add imagePullSecret if opt out on pod lvl from altering image name", func() {
+		It("should not modify pod spec", func() {
 			By("applying the deployment")
 			cmd := exec.Command("kubectl", "apply",
 				"-f", "./test/e2e/testdata/test3.yaml",
@@ -439,6 +446,7 @@ var _ = Describe("Manager", Ordered, func() {
 			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("k8s.gcr.io"))
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).ShouldNot(Equal("true"))
 			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
 				Name: "registry-credentials",
 			}))
