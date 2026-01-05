@@ -22,17 +22,23 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-    - name: Clone the code
-      uses: actions/checkout@v4
-    - name: Install k3d
-      run: |
-        mkdir -p $HOME/bin
-        curl -Lo $HOME/bin/k3d https://github.com/k3d-io/k3d/releases/download/${{env.K3D_VERSION}}/k3d-linux-amd64
-        chmod +x $HOME/bin/k3d
-        echo "$HOME/bin" >> $GITHUB_PATH
-    - name: Setup k3d cluster, Docker registry and rt-bootstrapper controller
-      run: |
+      - name: Clone the code
+        uses: actions/checkout@v4
+      - name: Install k3d
+        run: |
+          mkdir -p $HOME/bin
+          curl -Lo $HOME/bin/k3d https://github.com/k3d-io/k3d/releases/download/${{env.K3D_VERSION}}/k3d-linux-amd64
+          chmod +x $HOME/bin/k3d
+          echo "$HOME/bin" >> $GITHUB_PATH
+      - name: Setup k3d cluster, Docker registry and rt-bootstrapper controller
+        run: |
           cd hack/rt-cicd-tests
           chmod +x ./setup-k3d-registry-bootstrapper.sh
           ./setup-k3d-registry-bootstrapper.sh
-      shell: bash
+        shell: bash
+      - name: Run rt-bootsrapper tests cases
+        run: |
+          cd hack/rt-cicd-tests
+          chmod +x ./rt-bootstrapper-test.sh
+          ./rt-bootstrapper-test.sh
+        shell: bash
