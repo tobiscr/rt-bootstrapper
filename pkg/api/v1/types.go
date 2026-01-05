@@ -13,7 +13,7 @@ import (
 const (
 	AnnotationAlterImgRegistry      = "rt-cfg.kyma-project.io/alter-img-registry"
 	AnnotationSetPullSecret         = "rt-cfg.kyma-project.io/add-img-pull-secret"
-	AnnotationAddClusterTrustBundle = "rt-cfg.kyma-project.io/add-add-cluster-trust-bundle"
+	AnnotationAddClusterTrustBundle = "rt-cfg.kyma-project.io/add-cluster-trust-bundle"
 	AnnotationDefaulted             = "rt-bootstrapper.kyma-project.io/defaulted"
 	FiledManager                    = "rt-bootstrapper"
 )

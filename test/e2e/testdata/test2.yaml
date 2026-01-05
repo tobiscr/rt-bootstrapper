@@ -11,8 +11,6 @@ spec:
       app: pause-test2
   template:
     metadata:
-      annotations:
-        rt-cfg.kyma-project.io/add-img-pull-secret: "false"
       labels:
         app: pause-test2
     spec:

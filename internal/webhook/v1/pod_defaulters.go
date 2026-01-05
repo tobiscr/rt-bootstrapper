@@ -14,13 +14,13 @@ type PodDefaulter = func(p *corev1.Pod, nsAnnotations map[string]string) (bool, 
 
 var (
 	annotationsAlterImgRegistry = map[string]string{
-		apiv1.AnnotationAlterImgRegistry: "false",
+		apiv1.AnnotationAlterImgRegistry: "true",
 	}
 	annotationsSetPullSecret = map[string]string{
-		apiv1.AnnotationSetPullSecret: "false",
+		apiv1.AnnotationSetPullSecret: "true",
 	}
 	annotationAddClusterTrustBundle = map[string]string{
-		apiv1.AnnotationAddClusterTrustBundle: "false",
+		apiv1.AnnotationAddClusterTrustBundle: "true",
 	}
 )
 
@@ -34,15 +34,15 @@ func defaultPod(update func(*corev1.Pod) bool, features map[string]string) PodDe
 			With("ns-annotations", nsAnnotations).
 			With("features", features)
 
-		for _, annotations := range []map[string]string{p.Annotations, nsAnnotations} {
+		for _, annotations := range []map[string]string{nsAnnotations, p.Annotations} {
 			if k8s.Contains(annotations, features) {
-				logger.Debug("opt out", "ns-annotations", nsAnnotations)
-				return false, nil
+				logger.Debug("pod defaulting opt in")
+				return update(p), nil
 			}
 		}
 
-		logger.Debug("pod defaulting opt in")
-		return update(p), nil
+		logger.Debug("opt out", "ns-annotations", nsAnnotations)
+		return false, nil
 	}
 }
 

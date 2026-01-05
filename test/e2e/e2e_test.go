@@ -71,7 +71,10 @@ var _ = Describe("Manager", Ordered, func() {
 
 		By(fmt.Sprintf("opt out altering image registry for namespace: %s", testNamespace2))
 		cmd = exec.Command("kubectl", "annotate", "ns", testNamespace2,
-			"rt-cfg.kyma-project.io/add-img-pull-secret=false")
+			"rt-cfg.kyma-project.io/alter-img-registry=true",
+			"rt-cfg.kyma-project.io/add-img-pull-secret=true",
+			"rt-cfg.kyma-project.io/add-cluster-trust-bundle=true",
+		)
 		_, err = utils.Run(cmd)
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
 
@@ -320,92 +323,17 @@ var _ = Describe("Manager", Ordered, func() {
 			Expect(signerName).To(Equal("rt-bootstrapper-k3d.test/ctb"))
 		})
 
-		It("should alter the image name and add imagePullSecret property", func() {
-			testNamespace := "rt-bootstrapper-test1"
+		It("should work with all features activated on ns lvl", func() {
 
-			By("applying the deployment in opt in namespace")
-			cmd := exec.Command("kubectl", "apply",
-				"-f", "./test/e2e/testdata/test1.yaml",
-				"-n", testNamespace)
-
-			_, err := utils.Run(cmd)
-			Expect(err).NotTo(HaveOccurred())
-
-			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test1",
-				"--for", "condition=Available",
-				"--namespace", testNamespace,
-				"--timeout", "20s",
-			)
-
-			_, err = utils.Run(cmd)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			cmd = exec.Command("kubectl", "get", "pod",
-				"-l", "app=pause-test1",
-				"-n", testNamespace,
-				"-o", "jsonpath={.items[0]}")
-			output, err := utils.Run(cmd)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			pod, err := utils.ToPod(output)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
-			Expect(pod.Spec.ImagePullSecrets).Should(ContainElement(corev1.LocalObjectReference{
-				Name: "registry-credentials",
-			}))
-			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
-
-			cmd = exec.Command("kubectl", "get", "secret",
-				"-n", testNamespace)
-			_, err = utils.Run(cmd)
-			Expect(err).ShouldNot(HaveOccurred())
-		})
-
-		It("should just alter the image name if opt out on pod lvl from adding imagePullSecret property", func() {
 			By("applying the deployment in opt in namespace")
 			cmd := exec.Command("kubectl", "apply",
 				"-f", "./test/e2e/testdata/test2.yaml",
-				"-n", testNamespace1)
-
-			_, err := utils.Run(cmd)
-			Expect(err).NotTo(HaveOccurred())
-
-			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test2",
-				"--for", "condition=Available",
-				"--namespace", testNamespace1,
-				"--timeout", "20s",
-			)
-
-			_, err = utils.Run(cmd)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			cmd = exec.Command("kubectl", "get", "pod",
-				"-l", "app=pause-test2",
-				"-n", testNamespace1,
-				"-o", "jsonpath={.items[0]}")
-			output, err := utils.Run(cmd)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			pod, err := utils.ToPod(output)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
-			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
-			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
-				Name: "registry-credentials",
-			}))
-		})
-
-		It("should just alter the image name if opt out on ns lvl from adding imagePullSecret property", func() {
-			By("applying the deployment in opt in namespace")
-			cmd := exec.Command("kubectl", "apply",
-				"-f", "./test/e2e/testdata/test1.yaml",
 				"-n", testNamespace2)
 
 			_, err := utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
 
-			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test1",
+			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test2",
 				"--for", "condition=Available",
 				"--namespace", testNamespace2,
 				"--timeout", "20s",
@@ -415,7 +343,7 @@ var _ = Describe("Manager", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			cmd = exec.Command("kubectl", "get", "pod",
-				"-l", "app=pause-test1",
+				"-l", "app=pause-test2",
 				"-n", testNamespace2,
 				"-o", "jsonpath={.items[0]}")
 			output, err := utils.Run(cmd)
@@ -423,15 +351,93 @@ var _ = Describe("Manager", Ordered, func() {
 
 			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
+
+			By("having registry name replaced on pod")
 			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
-			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
-			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
+
+			By("having image-pull-secret added on pod")
+			Expect(pod.Spec.ImagePullSecrets).Should(ContainElement(corev1.LocalObjectReference{
 				Name: "registry-credentials",
 			}))
+
+			By("having cluster-trust-bundle volume mounted on pod")
+			Expect(pod.Spec.Containers[0].VolumeMounts).Should(ContainElement(corev1.VolumeMount{
+				Name:      "rt-bootstrapper-certs",
+				ReadOnly:  true,
+				MountPath: "/etc/ssl/certs",
+			}))
+
+			By("having cluster-trust-bundle volume created on pod")
+			Expect(pod.Spec.Volumes[1].VolumeSource.Projected.Sources).Should(ContainElement(corev1.VolumeProjection{
+				ClusterTrustBundle: &corev1.ClusterTrustBundleProjection{
+					Name: ptr.To("rt-bootstrapper-k3d.test:ctb:1"),
+					Path: "kube-apiserver-serving.pem",
+				},
+			}))
+
+			By("having 'defaulted' annotation added on pod")
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
 		})
 
-		It("should inject cluster-trust-bundle", func() {
-			By("applying the deployment")
+		It("should work with all features activated on pod lvl", func() {
+
+			By("applying the deployment in opt in namespace")
+			cmd := exec.Command("kubectl", "apply",
+				"-f", "./test/e2e/testdata/test1.yaml",
+				"-n", testNamespace1)
+
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test1",
+				"--for", "condition=Available",
+				"--namespace", testNamespace1,
+				"--timeout", "20s",
+			)
+
+			_, err = utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "get", "pod",
+				"-l", "app=pause-test1",
+				"-n", testNamespace1,
+				"-o", "jsonpath={.items[0]}")
+			output, err := utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			pod, err := utils.ToPod(output)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			By("having registry name replaced on pod")
+			Expect(pod.Spec.Containers[0].Image).ShouldNot(HavePrefix("replace.me"))
+
+			By("having image-pull-secret added on pod")
+			Expect(pod.Spec.ImagePullSecrets).Should(ContainElement(corev1.LocalObjectReference{
+				Name: "registry-credentials",
+			}))
+
+			By("having cluster-trust-bundle volume mounted on pod")
+			Expect(pod.Spec.Containers[0].VolumeMounts).Should(ContainElement(corev1.VolumeMount{
+				Name:      "rt-bootstrapper-certs",
+				ReadOnly:  true,
+				MountPath: "/etc/ssl/certs",
+			}))
+
+			By("having cluster-trust-bundle volume created on pod")
+			Expect(pod.Spec.Volumes[1].VolumeSource.Projected.Sources).Should(ContainElement(corev1.VolumeProjection{
+				ClusterTrustBundle: &corev1.ClusterTrustBundleProjection{
+					Name: ptr.To("rt-bootstrapper-k3d.test:ctb:1"),
+					Path: "kube-apiserver-serving.pem",
+				},
+			}))
+
+			By("having 'defaulted' annotation added on pod")
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
+		})
+
+		It("should work with all features inactive", func() {
+
+			By("applying the deployment in opt in namespace")
 			cmd := exec.Command("kubectl", "apply",
 				"-f", "./test/e2e/testdata/test3.yaml",
 				"-n", testNamespace1)
@@ -458,22 +464,18 @@ var _ = Describe("Manager", Ordered, func() {
 			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("localhost:5002"))
-			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
-			Expect(pod.Spec.Containers[0].VolumeMounts).Should(ContainElement(corev1.VolumeMount{
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).ShouldNot(Equal("true"))
+			Expect(pod.Spec.Containers[0].VolumeMounts).ShouldNot(ContainElement(corev1.VolumeMount{
 				Name:      "rt-bootstrapper-certs",
 				ReadOnly:  true,
 				MountPath: "/etc/ssl/certs",
 			}))
-			Expect(pod.Spec.Volumes[1].VolumeSource.Projected.Sources).Should(ContainElement(corev1.VolumeProjection{
-				ClusterTrustBundle: &corev1.ClusterTrustBundleProjection{
-					Name: ptr.To("rt-bootstrapper-k3d.test:ctb:1"),
-					Path: "kube-apiserver-serving.pem",
-				},
-			}))
 
-			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
-				Name: "registry-credentials",
-			}))
+			By("not having cluster-trust-bundle volume created on pod")
+			Expect(len(pod.Spec.Volumes)).Should(Equal(1))
+
+			By("not having 'defaulted' annotation added on pod")
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(BeEmpty())
 		})
 
 		It("should not modify pod spec", func() {
