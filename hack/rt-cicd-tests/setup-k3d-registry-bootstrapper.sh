@@ -2,42 +2,59 @@
 set -e
 set -o pipefail
 
-docker_registry_name="my-private-registry"
-docker_registry_port="5001"
+docker_registry_name_secured="registry-test-secured"
+docker_registry_port_secured="5001" # If you change this, also change it in registry-config.yml
+docker_registry_name_open="registry-test-open"
+docker_registry_port_open="5002" # If you change this, also change it in registry-config.yml
 cluster_name="registry-test"
 bootstrapper_image_name="localhost:5001/rt-bootstrapper:registry-test"
 
 #Prepare a Docker registry
-
 docker run --entrypoint htpasswd httpd:2.4.66-alpine -Bbn admin password123 > htpasswd
 
 docker run -d \
---name "${docker_registry_name}" \
+--name "${docker_registry_name_secured}" \
 --restart=always \
--p "${docker_registry_port}":5000 \
+-p "${docker_registry_port_secured}":5000 \
 -v "$(pwd)"/htpasswd:/auth/htpasswd \
 -e "REGISTRY_AUTH=htpasswd" \
 -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" \
 -e "REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd" \
 registry:3
 
-docker login localhost:5001 -u admin -p password123
+docker run -d \
+--name "${docker_registry_name_open}" \
+--restart=always \
+-p "${docker_registry_port_open}":5000 \
+registry:3
 
-echo "Docker registry '${docker_registry_name}' is running on port ${docker_registry_port}."
+docker login localhost:${docker_registry_port_secured} -u admin -p password123
+echo "Password secured Docker registry '${docker_registry_name_secured}' is running on port ${docker_registry_port_secured}."
+
+if [ "$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:"${docker_registry_port_open}"/v2/_catalog)" -ne 200 ]; then
+  echo "Failed to connect to open Docker registry '${docker_registry_name_open}' on port ${docker_registry_port_open}."
+  exit 1
+fi
+echo "Open Docker registry '${docker_registry_name_open}' is running on port ${docker_registry_port_open}."
 
 docker pull alpine:latest
-docker tag alpine:latest localhost:5001/test-alpine-image:v1
-docker push localhost:5001/test-alpine-image:v1
+docker tag alpine:latest localhost:${docker_registry_port_secured}/test-alpine-image:v1
+docker push localhost:${docker_registry_port_secured}/test-alpine-image:v1
+
+docker pull busybox:latest
+docker tag busybox:latest localhost:${docker_registry_port_open}/test-busybox:v1
+docker push localhost:${docker_registry_port_open}/test-busybox:v1
 
 #Preapre a k3d cluster and connect it to the registry
 k3d cluster create ${cluster_name} \
   --registry-config "$(pwd)"/registry-config.yml
-docker network connect k3d-${cluster_name} ${docker_registry_name}
+docker network connect k3d-${cluster_name} ${docker_registry_name_secured}
+docker network connect k3d-${cluster_name} ${docker_registry_name_open}
 
 #Build rt-bootstrapper image and push it to the private registry
 make -C ../.. docker-build IMG=${bootstrapper_image_name}
 make -C ../.. docker-push IMG=${bootstrapper_image_name}
-make -C ../.. build-k3d-installer IMG=${bootstrapper_image_name}
+make -C ../.. build-cicd-installer IMG=${bootstrapper_image_name}
 
 #Deploy a rt-bootstrapper to k3d
 export KUBECONFIG="$(k3d kubeconfig write ${cluster_name})"
@@ -46,10 +63,9 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 kubectl wait --namespace cert-manager --for=condition=Available deployment --all --timeout=40s
 
 kubectl create secret docker-registry registry-credentials -n kyma-system \
-  --docker-server=localhost:5001 \
+  --docker-server=localhost:${docker_registry_port_secured} \
   --docker-username=admin \
   --docker-password=password123
 
-kubectl apply -f ../../dist/k3d-install.yaml
-kubectl patch deployment rt-bootstrapper-controller-manager -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"registry-credentials"}]}}}}' -n kyma-system
+kubectl apply -f ../../dist/cicd-install.yaml
 kubectl wait --namespace kyma-system --for=condition=Available deployment/rt-bootstrapper-controller-manager --timeout=40s

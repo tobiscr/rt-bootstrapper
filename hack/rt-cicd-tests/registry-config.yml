@@ -1,8 +1,14 @@
 mirrors:
   "localhost:5001":
     endpoint:
-      - "http://my-private-registry:5000"
+      - "http://registry-test-secured:5000"
+  "localhost:5002":
+    endpoint:
+      - "http://registry-test-open:5000"
 configs:
   "localhost:5001":
+    tls:
+      insecure_skip_verify: true
+  "localhost:5002":
     tls:
       insecure_skip_verify: true

@@ -151,6 +151,11 @@ build-k3d-installer: manifests generate kustomize ## Generate a consolidated YAM
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/k3d > dist/k3d-install.yaml
 
+.PHONY: build-cicd-installer
+build-cicd-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
+	mkdir -p dist
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/cicd > dist/cicd-install.yaml
 
 ##@ Deployment
 
