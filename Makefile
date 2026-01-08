@@ -93,8 +93,13 @@ test-e2e: setup-test-e2e setup-docker-registry ## manifests generate fmt vet ## 
 #	$(MAKE) cleanup-test-e2e
 
 .PHONY: cleanup-test-e2e
-cleanup-test-e2e: ## Tear down the Kind cluster used for e2e tests
+cleanup-test-e2e: ## Tear down the Kind cluster used for e2e tests and remove the local registries
 	@$(K3D) cluster delete $(K3D_CLUSTER)
+
+	docker stop registry-test-secured
+	docker rm registry-test-secured
+	docker stop registry-test-open
+	docker rm registry-test-open
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter
