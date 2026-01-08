@@ -503,7 +503,7 @@ var _ = Describe("Manager", Ordered, func() {
 
 			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("example.com"))
+			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("localhost:5002"))
 			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).ShouldNot(Equal("true"))
 			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
 				Name: "registry-credentials",
