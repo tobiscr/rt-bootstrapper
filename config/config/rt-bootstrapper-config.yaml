@@ -10,10 +10,10 @@ data:
         "example.com": "ghcr.io"
       },
       "clusterTrustBundleMapping": {
-        "signer": "rt-bootstrapper-k3d.test:ctb:1",
+        "clusterTrustBundleName": "rt-bootstrapper-k3d.test:ctb:1",
         "certWritePath": "kube-apiserver-serving.pem",
         "volumeMountPath": "/etc/ssl/certs",
-        "name": "rt-bootstrapper-certs"
+        "volumeName": "rt-bootstrapper-certs"
       }
     }
 kind: ConfigMap
