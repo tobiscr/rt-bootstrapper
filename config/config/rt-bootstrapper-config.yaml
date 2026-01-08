@@ -6,8 +6,8 @@ data:
       "imagePullSecretNamespace": "kyma-system",
       "secretSyncInterval": "1m",
       "overrides": {
-        "replace.me": "ghcr.io",
-        "example.com": "ghcr.io"
+        "replace.me": "localhost:5001",
+        "example.com": "localhost:5002"
       },
       "clusterTrustBundleMapping": {
         "clusterTrustBundleName": "rt-bootstrapper-k3d.test:ctb:1",

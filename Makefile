@@ -69,6 +69,10 @@ K3D_IMAGE ?= rancher/k3s:v1.33.6-k3s1
 K3D_ARGS  ?= --k3s-arg '--kube-apiserver-arg=feature-gates=ClusterTrustBundle=true,ClusterTrustBundleProjection=true@server:*' \
 	     --k3s-arg '--kube-apiserver-arg=runtime-config=certificates.k8s.io/v1beta1/clustertrustbundles=true@server:*'
 
+.PHONY: setup-docker-registry
+setup-docker-registry:
+	./hack/rt-e2e-tests/setup-k3d-registry-bootstrapper.sh
+
 .PHONY: setup-test-e2e
 setup-test-e2e: ## Set up a Kind cluster for e2e tests if it does not exist
 	@command -v $(K3D) >/dev/null 2>&1 || { \
@@ -80,13 +84,13 @@ setup-test-e2e: ## Set up a Kind cluster for e2e tests if it does not exist
 			echo "K3D cluster '$(K3D_CLUSTER)' already exists. Skipping creation." ;; \
 		*) \
 			echo "Creating K3D cluster '$(K3D_CLUSTER)'..."; \
-			$(K3D) cluster create --image=$(K3D_IMAGE) $(K3D_ARGS) $(K3D_CLUSTER) ;; \
+			$(K3D) cluster create --image=$(K3D_IMAGE) $(K3D_ARGS) $(K3D_CLUSTER) --registry-config hack/rt-e2e-tests/registry-config.yml ;; \
 	esac
 
 .PHONY: test-e2e
-test-e2e: setup-test-e2e manifests generate fmt vet ## Run the e2e tests. Expected an isolated environment using k3d.
+test-e2e: setup-test-e2e setup-docker-registry ## manifests generate fmt vet ## Run the e2e tests. Expected an isolated environment using k3d.
 	K3D=$(K3D) K3D_CLUSTER=$(K3D_CLUSTER) go test -tags=e2e ./test/e2e/ -v -ginkgo.v
-	$(MAKE) cleanup-test-e2e
+#	$(MAKE) cleanup-test-e2e
 
 .PHONY: cleanup-test-e2e
 cleanup-test-e2e: ## Tear down the Kind cluster used for e2e tests
@@ -150,12 +154,6 @@ build-k3d-installer: manifests generate kustomize ## Generate a consolidated YAM
 	mkdir -p dist
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/k3d > dist/k3d-install.yaml
-
-.PHONY: build-cicd-installer
-build-cicd-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
-	mkdir -p dist
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/cicd > dist/cicd-install.yaml
 
 ##@ Deployment
 

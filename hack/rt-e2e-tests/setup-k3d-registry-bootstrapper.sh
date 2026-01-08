@@ -6,8 +6,7 @@ docker_registry_name_secured="registry-test-secured"
 docker_registry_port_secured="5001" # If you change this, also change it in registry-config.yml
 docker_registry_name_open="registry-test-open"
 docker_registry_port_open="5002" # If you change this, also change it in registry-config.yml
-cluster_name="registry-test"
-bootstrapper_image_name="localhost:5001/rt-bootstrapper:registry-test"
+cluster_name="rt-bootstrapper-test-e2e"
 
 #Prepare a Docker registry
 docker run --entrypoint htpasswd httpd:2.4.66-alpine -Bbn admin password123 > htpasswd
@@ -45,27 +44,5 @@ docker pull busybox:latest
 docker tag busybox:latest localhost:${docker_registry_port_open}/test-busybox:v1
 docker push localhost:${docker_registry_port_open}/test-busybox:v1
 
-#Preapre a k3d cluster and connect it to the registry
-k3d cluster create ${cluster_name} \
-  --registry-config "$(pwd)"/registry-config.yml
 docker network connect k3d-${cluster_name} ${docker_registry_name_secured}
 docker network connect k3d-${cluster_name} ${docker_registry_name_open}
-
-#Build rt-bootstrapper image and push it to the private registry
-make -C ../.. docker-build IMG=${bootstrapper_image_name}
-make -C ../.. docker-push IMG=${bootstrapper_image_name}
-make -C ../.. build-cicd-installer IMG=${bootstrapper_image_name}
-
-#Deploy a rt-bootstrapper to k3d
-export KUBECONFIG="$(k3d kubeconfig write ${cluster_name})"
-kubectl create namespace kyma-system
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.yaml
-kubectl wait --namespace cert-manager --for=condition=Available deployment --all --timeout=40s
-
-kubectl create secret docker-registry registry-credentials -n kyma-system \
-  --docker-server=localhost:${docker_registry_port_secured} \
-  --docker-username=admin \
-  --docker-password=password123
-
-kubectl apply -f ../../dist/cicd-install.yaml
-kubectl wait --namespace kyma-system --for=condition=Available deployment/rt-bootstrapper-controller-manager --timeout=40s

@@ -77,9 +77,9 @@ var _ = Describe("Manager", Ordered, func() {
 
 		By("creating master-password secret")
 		cmd = exec.Command("kubectl", "create", "secret", "docker-registry", "registry-credentials",
-			"--docker-username=test",
-			"--docker-password=aGktdGhlcmU=",
-			"--docker-server=test.me.plz",
+			"--docker-username=admin",
+			"--docker-password=password123",
+			"--docker-server=localhost:5001",
 			"-n", namespace)
 
 		_, err = utils.Run(cmd)
@@ -503,7 +503,7 @@ var _ = Describe("Manager", Ordered, func() {
 
 			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("k8s.gcr.io"))
+			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("example.com"))
 			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).ShouldNot(Equal("true"))
 			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
 				Name: "registry-credentials",

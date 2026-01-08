@@ -16,4 +16,6 @@ spec:
     spec:
       containers:
       - name: pause
-        image: replace.me/kyma-project/rt-bootstrapper/pause:e2e
+        image: replace.me/test-alpine-image:v1
+        command: [ "/bin/sh", "-c", "--" ]
+        args: [ "while true; do sleep 30; done;" ]
