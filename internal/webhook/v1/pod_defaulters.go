@@ -159,7 +159,7 @@ func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping) 
 		}
 
 		if reflect.DeepEqual(p.Spec.Volumes[index], vol) {
-			slog.Debug("equal volume found, nothing to do")
+			slog.Debug("volume already added, nothing to do")
 			return handleVolumeMounts(false, p)
 		}
 
