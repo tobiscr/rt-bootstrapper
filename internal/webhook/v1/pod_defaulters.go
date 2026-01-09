@@ -137,18 +137,16 @@ func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping) 
 		return result
 	}
 
-	addVolumeMount := func(modified bool, p *corev1.Pod) bool {
-		// stores information if any container was modified
-		var result bool
-
+	handleVolumeMounts := func(modified bool, p *corev1.Pod) bool {
 		for _, cs := range [][]corev1.Container{p.Spec.Containers, p.Spec.InitContainers} {
-			result = result || handleVolumeMount(cs)
+			if handleVolumeMount(cs) {
+				modified = true
+			}
 		}
-
-		return modified || result
+		return modified
 	}
 
-	addClusterTrustBundle := func(p *corev1.Pod) bool {
+	handleClusterTrustBundle := func(p *corev1.Pod) bool {
 		index := slices.IndexFunc(p.Spec.Volumes, func(v corev1.Volume) bool {
 			return v.Name == mapping.VolumeName
 		})
@@ -157,19 +155,19 @@ func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping) 
 			// volume does not exist, add it
 			p.Spec.Volumes = append(p.Spec.Volumes, vol)
 			slog.Debug("volume added")
-			return addVolumeMount(true, p)
+			return handleVolumeMounts(true, p)
 		}
 
 		if reflect.DeepEqual(p.Spec.Volumes[index], vol) {
 			slog.Debug("equal volume found, nothing to do")
-			return addVolumeMount(false, p)
+			return handleVolumeMounts(false, p)
 		}
 
 		p.Spec.Volumes[index] = vol
 		slog.Debug("volume replaced")
 
-		return addVolumeMount(true, p)
+		return handleVolumeMounts(true, p)
 	}
 
-	return defaultPod(addClusterTrustBundle, annotationAddClusterTrustBundle)
+	return defaultPod(handleClusterTrustBundle, annotationAddClusterTrustBundle)
 }
