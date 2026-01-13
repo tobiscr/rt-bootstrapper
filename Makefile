@@ -88,7 +88,7 @@ setup-test-e2e: ## Set up a Kind cluster for e2e tests if it does not exist
 	esac
 
 .PHONY: test-e2e
-test-e2e: setup-test-e2e setup-docker-registry ## manifests generate fmt vet ## Run the e2e tests. Expected an isolated environment using k3d.
+test-e2e: setup-test-e2e setup-docker-registry manifests generate fmt vet ## manifests generate fmt vet ## Run the e2e tests. Expected an isolated environment using k3d.
 	K3D=$(K3D) K3D_CLUSTER=$(K3D_CLUSTER) go test -tags=e2e ./test/e2e/ -v -ginkgo.v
 #	$(MAKE) cleanup-test-e2e
 

@@ -457,7 +457,7 @@ var _ = Describe("Manager", Ordered, func() {
 
 			pod, err := utils.ToPod(output)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("k8s.gcr.io"))
+			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("localhost:5002"))
 			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
 			Expect(pod.Spec.Containers[0].VolumeMounts).Should(ContainElement(corev1.VolumeMount{
 				Name:      "rt-bootstrapper-certs",
