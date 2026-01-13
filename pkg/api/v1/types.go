@@ -18,12 +18,28 @@ const (
 	FiledManager                    = "rt-bootstrapper"
 )
 
+type NamespaceFeatures map[string][]string
+
+func (f NamespaceFeatures) Features(nsName string) map[string]string {
+	featureList, found := f[nsName]
+	if !found {
+		return map[string]string{}
+	}
+
+	result := make(map[string]string, len(featureList))
+	for _, feature := range featureList {
+		result[feature] = "true"
+	}
+	return result
+}
+
 type Config struct {
 	Overrides                 map[string]string              `json:"overrides" validate:"required"`
 	ImagePullSecretName       string                         `json:"imagePullSecretName" validate:"required"`
 	ImagePullSecretNamespace  string                         `json:"imagePullSecretNamespace" validate:"required"`
 	SecretSyncInterval        Duration                       `json:"secretSyncInterval" validate:"required"`
 	ClusterTrustBundleMapping *k8s.ClusterTrustBundleMapping `json:"clusterTrustBundleMapping,omitempty"`
+	NamespaceFeatures         *NamespaceFeatures             `json:"namespaceFeatures,omitempty"`
 }
 
 type Duration time.Duration

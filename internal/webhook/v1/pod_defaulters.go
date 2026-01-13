@@ -24,18 +24,27 @@ var (
 	}
 )
 
-func defaultPod(update func(*corev1.Pod) bool, features map[string]string) PodDefaulter {
+type updateOpts struct {
+	activeAnnotations map[string]string
+	namespaceFeatures apiv1.NamespaceFeatures
+}
+
+func defaultPod(update func(*corev1.Pod) bool, opts updateOpts) PodDefaulter {
 	return func(p *corev1.Pod, nsAnnotations map[string]string) (bool, error) {
 		// prepare logger
 		kvs := keysAndValues(p)
+
+		defaultFeatures := opts.namespaceFeatures.Features(p.Namespace)
+
 		logger := slog.Default().
 			WithGroup("args").
 			With(kvs...).
 			With("ns-annotations", nsAnnotations).
-			With("features", features)
+			With("active-features", opts.activeAnnotations).
+			With("default-features", defaultFeatures)
 
-		for _, annotations := range []map[string]string{nsAnnotations, p.Annotations} {
-			if k8s.Contains(annotations, features) {
+		for _, annotations := range []map[string]string{defaultFeatures, nsAnnotations, p.Annotations} {
+			if k8s.Contains(annotations, opts.activeAnnotations) {
 				logger.Debug("pod defaulting opt in")
 				return update(p), nil
 			}
@@ -67,7 +76,7 @@ func alterImgRegistry(containers []corev1.Container, overrides map[string]string
 	return modified
 }
 
-func BuildPodDefaulterAlterImgRegistry(overrides map[string]string) PodDefaulter {
+func BuildPodDefaulterAlterImgRegistry(overrides map[string]string, nsf apiv1.NamespaceFeatures) PodDefaulter {
 	alterPodImageRegistry := func(p *corev1.Pod) bool {
 		var modified bool
 		for _, containers := range [][]corev1.Container{
@@ -82,10 +91,13 @@ func BuildPodDefaulterAlterImgRegistry(overrides map[string]string) PodDefaulter
 		return modified
 	}
 
-	return defaultPod(alterPodImageRegistry, annotationsAlterImgRegistry)
+	return defaultPod(alterPodImageRegistry, updateOpts{
+		activeAnnotations: annotationsAlterImgRegistry,
+		namespaceFeatures: nsf,
+	})
 }
 
-func BuildPodDefaulterAddImagePullSecrets(secretName string) PodDefaulter {
+func BuildPodDefaulterAddImagePullSecrets(secretName string, nsf apiv1.NamespaceFeatures) PodDefaulter {
 	addImgPullSecret := func(p *corev1.Pod) bool {
 		imgPullSecret := corev1.LocalObjectReference{Name: secretName}
 		if slices.Contains(p.Spec.ImagePullSecrets, imgPullSecret) {
@@ -98,10 +110,13 @@ func BuildPodDefaulterAddImagePullSecrets(secretName string) PodDefaulter {
 		return true
 	}
 
-	return defaultPod(addImgPullSecret, annotationsSetPullSecret)
+	return defaultPod(addImgPullSecret, updateOpts{
+		activeAnnotations: annotationsSetPullSecret,
+		namespaceFeatures: nsf,
+	})
 }
 
-func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping) PodDefaulter {
+func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping, nsf apiv1.NamespaceFeatures) PodDefaulter {
 	slog.Debug("building volume", mapping.KeysAndValues()...)
 
 	vol := mapping.ClusterTrustedBundle()
@@ -138,11 +153,13 @@ func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping) 
 	}
 
 	handleVolumeMounts := func(modified bool, p *corev1.Pod) bool {
+		// stores information if any container was modified
 		for _, cs := range [][]corev1.Container{p.Spec.Containers, p.Spec.InitContainers} {
 			if handleVolumeMount(cs) {
 				modified = true
 			}
 		}
+
 		return modified
 	}
 
@@ -169,5 +186,8 @@ func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping) 
 		return handleVolumeMounts(true, p)
 	}
 
-	return defaultPod(handleClusterTrustBundle, annotationAddClusterTrustBundle)
+	return defaultPod(handleClusterTrustBundle, updateOpts{
+		activeAnnotations: annotationAddClusterTrustBundle,
+		namespaceFeatures: nsf,
+	})
 }

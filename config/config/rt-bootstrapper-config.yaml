@@ -14,6 +14,12 @@ data:
         "certWritePath": "kube-apiserver-serving.pem",
         "volumeMountPath": "/etc/ssl/certs",
         "volumeName": "rt-bootstrapper-certs"
+      },
+      "namespaceFeatures": {
+        "kyma-system": [ 
+          "rt-cfg.kyma-project.io/alter-img-registry",
+          "rt-cfg.kyma-project.io/add-img-pull-secret"
+        ]
       }
     }
 kind: ConfigMap
