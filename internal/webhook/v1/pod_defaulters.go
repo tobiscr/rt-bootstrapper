@@ -2,6 +2,7 @@ package v1
 
 import (
 	"log/slog"
+	"reflect"
 	"slices"
 
 	"github.com/kyma-project/rt-bootstrapper/internal/webhook/k8s"
@@ -17,6 +18,9 @@ var (
 	}
 	annotationsSetPullSecret = map[string]string{
 		apiv1.AnnotationSetPullSecret: "false",
+	}
+	annotationAddClusterTrustBundle = map[string]string{
+		apiv1.AnnotationAddClusterTrustBundle: "false",
 	}
 )
 
@@ -95,4 +99,75 @@ func BuildPodDefaulterAddImagePullSecrets(secretName string) PodDefaulter {
 	}
 
 	return defaultPod(addImgPullSecret, annotationsSetPullSecret)
+}
+
+func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping) PodDefaulter {
+	slog.Debug("building volume", mapping.KeysAndValues()...)
+
+	vol := mapping.ClusterTrustedBundle()
+
+	handleVolumeMount := func(cs []corev1.Container) bool {
+		// stores information if any container was modified
+		var result bool
+
+		for i, c := range cs {
+			index := slices.IndexFunc(c.VolumeMounts, func(vm corev1.VolumeMount) bool {
+				return vm.Name == mapping.VolumeName
+			})
+
+			if index == -1 {
+				vm := mapping.VolumeMount()
+				cs[i].VolumeMounts = append(c.VolumeMounts, vm)
+				result = true
+				slog.Debug("volume mount added")
+				continue
+			}
+
+			if reflect.DeepEqual(c.VolumeMounts[index], vol) {
+				slog.Debug("volume already mounted, nothing to do")
+				continue
+			}
+
+			vm := mapping.VolumeMount()
+			cs[i].VolumeMounts[index] = vm
+			slog.Debug("volume mount replaced")
+			result = true
+		}
+
+		return result
+	}
+
+	handleVolumeMounts := func(modified bool, p *corev1.Pod) bool {
+		for _, cs := range [][]corev1.Container{p.Spec.Containers, p.Spec.InitContainers} {
+			if handleVolumeMount(cs) {
+				modified = true
+			}
+		}
+		return modified
+	}
+
+	handleClusterTrustBundle := func(p *corev1.Pod) bool {
+		index := slices.IndexFunc(p.Spec.Volumes, func(v corev1.Volume) bool {
+			return v.Name == mapping.VolumeName
+		})
+
+		if index == -1 {
+			// volume does not exist, add it
+			p.Spec.Volumes = append(p.Spec.Volumes, vol)
+			slog.Debug("volume added")
+			return handleVolumeMounts(true, p)
+		}
+
+		if reflect.DeepEqual(p.Spec.Volumes[index], vol) {
+			slog.Debug("volume already added, nothing to do")
+			return handleVolumeMounts(false, p)
+		}
+
+		p.Spec.Volumes[index] = vol
+		slog.Debug("volume replaced")
+
+		return handleVolumeMounts(true, p)
+	}
+
+	return defaultPod(handleClusterTrustBundle, annotationAddClusterTrustBundle)
 }

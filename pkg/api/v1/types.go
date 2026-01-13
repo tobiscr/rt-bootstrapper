@@ -7,20 +7,23 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/kyma-project/rt-bootstrapper/internal/webhook/k8s"
 )
 
 const (
-	AnnotationAlterImgRegistry = "rt-cfg.kyma-project.io/alter-img-registry"
-	AnnotationSetPullSecret    = "rt-cfg.kyma-project.io/add-img-pull-secret"
-	AnnotationDefaulted        = "rt-bootstrapper.kyma-project.io/defaulted"
-	FiledManager               = "rt-bootstrapper"
+	AnnotationAlterImgRegistry      = "rt-cfg.kyma-project.io/alter-img-registry"
+	AnnotationSetPullSecret         = "rt-cfg.kyma-project.io/add-img-pull-secret"
+	AnnotationAddClusterTrustBundle = "rt-cfg.kyma-project.io/add-add-cluster-trust-bundle"
+	AnnotationDefaulted             = "rt-bootstrapper.kyma-project.io/defaulted"
+	FiledManager                    = "rt-bootstrapper"
 )
 
 type Config struct {
-	Overrides                map[string]string `json:"overrides" validate:"required"`
-	ImagePullSecretName      string            `json:"imagePullSecretName" validate:"required"`
-	ImagePullSecretNamespace string            `json:"imagePullSecretNamespace" validate:"required"`
-	SecretSyncInterval       Duration          `json:"secretSyncInterval" validate:"required"`
+	Overrides                 map[string]string              `json:"overrides" validate:"required"`
+	ImagePullSecretName       string                         `json:"imagePullSecretName" validate:"required"`
+	ImagePullSecretNamespace  string                         `json:"imagePullSecretNamespace" validate:"required"`
+	SecretSyncInterval        Duration                       `json:"secretSyncInterval" validate:"required"`
+	ClusterTrustBundleMapping *k8s.ClusterTrustBundleMapping `json:"clusterTrustBundleMapping,omitempty"`
 }
 
 type Duration time.Duration

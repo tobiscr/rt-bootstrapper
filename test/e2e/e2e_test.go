@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 )
 
 // namespace where the project is deployed in
@@ -308,6 +309,17 @@ var _ = Describe("Manager", Ordered, func() {
 			Eventually(verifyCAInjection).Should(Succeed())
 		})
 
+		It("should provisioned cluster-trust-bundle", func() {
+			By("checking rt-bootstrapper-k3d.test:ctb:1")
+			cmd := exec.Command("kubectl", "get",
+				"clustertrustbundles.certificates.k8s.io",
+				"rt-bootstrapper-k3d.test:ctb:1",
+				"-o", "go-template={{ .spec.signerName }}")
+			signerName, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(signerName).To(Equal("rt-bootstrapper-k3d.test/ctb"))
+		})
+
 		It("should alter the image name and add imagePullSecret property", func() {
 			testNamespace := "rt-bootstrapper-test1"
 
@@ -418,7 +430,7 @@ var _ = Describe("Manager", Ordered, func() {
 			}))
 		})
 
-		It("should not modify pod spec", func() {
+		It("should inject cluster-trust-bundle", func() {
 			By("applying the deployment")
 			cmd := exec.Command("kubectl", "apply",
 				"-f", "./test/e2e/testdata/test3.yaml",
@@ -438,6 +450,52 @@ var _ = Describe("Manager", Ordered, func() {
 
 			cmd = exec.Command("kubectl", "get", "pod",
 				"-l", "app=pause-test3",
+				"-n", testNamespace1,
+				"-o", "jsonpath={.items[0]}")
+			output, err := utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			pod, err := utils.ToPod(output)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Image).Should(HavePrefix("k8s.gcr.io"))
+			Expect(pod.Annotations[apiv1.AnnotationDefaulted]).Should(Equal("true"))
+			Expect(pod.Spec.Containers[0].VolumeMounts).Should(ContainElement(corev1.VolumeMount{
+				Name:      "rt-bootstrapper-certs",
+				ReadOnly:  true,
+				MountPath: "/etc/ssl/certs",
+			}))
+			Expect(pod.Spec.Volumes[1].VolumeSource.Projected.Sources).Should(ContainElement(corev1.VolumeProjection{
+				ClusterTrustBundle: &corev1.ClusterTrustBundleProjection{
+					Name: ptr.To("rt-bootstrapper-k3d.test:ctb:1"),
+					Path: "kube-apiserver-serving.pem",
+				},
+			}))
+
+			Expect(pod.Spec.ImagePullSecrets).ShouldNot(ContainElement(corev1.LocalObjectReference{
+				Name: "registry-credentials",
+			}))
+		})
+
+		It("should not modify pod spec", func() {
+			By("applying the deployment")
+			cmd := exec.Command("kubectl", "apply",
+				"-f", "./test/e2e/testdata/test4.yaml",
+				"-n", testNamespace1)
+
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "wait", "deployment.apps/pause-test4",
+				"--for", "condition=Available",
+				"--namespace", testNamespace1,
+				"--timeout", "20s",
+			)
+
+			_, err = utils.Run(cmd)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "get", "pod",
+				"-l", "app=pause-test4",
 				"-n", testNamespace1,
 				"-o", "jsonpath={.items[0]}")
 			output, err := utils.Run(cmd)

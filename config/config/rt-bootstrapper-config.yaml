@@ -8,6 +8,12 @@ data:
       "overrides": {
         "replace.me": "ghcr.io",
         "example.com": "ghcr.io"
+      },
+      "clusterTrustBundleMapping": {
+        "clusterTrustBundleName": "rt-bootstrapper-k3d.test:ctb:1",
+        "certWritePath": "kube-apiserver-serving.pem",
+        "volumeMountPath": "/etc/ssl/certs",
+        "volumeName": "rt-bootstrapper-certs"
       }
     }
 kind: ConfigMap

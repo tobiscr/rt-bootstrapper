@@ -1,0 +1,18 @@
+apiVersion: certificates.k8s.io/v1beta1
+kind: ClusterTrustBundle
+metadata:
+  name: k3d.test:ctb:1
+spec:
+  signerName: rt-bootstrapper-k3d.test/ctb
+  trustBundle: |
+    -----BEGIN CERTIFICATE-----
+    MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+    dmVyLWNhQDE3NjcwMTMxNjUwHhcNMjUxMjI5MTI1OTI1WhcNMzUxMjI3MTI1OTI1
+    WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NjcwMTMxNjUwWTATBgcqhkjO
+    PQIBBggqhkjOPQMBBwNCAASDZGb8hHA4r7/tLECdLLLtOQpfA0W+5FXdc4xJI7Zi
+    dwXz4WiliqVIxi77ow+c39EOe29X8yuNtbOouWsqn1Vho0IwQDAOBgNVHQ8BAf8E
+    BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUoqr1Zk9sh+WqFtLhFgUe
+    e0m5zGEwCgYIKoZIzj0EAwIDSAAwRQIhAK5eY2h5Ui8OivvqqpmWPx7rJYiEWR1g
+    +K3J/5+FXUv2AiBQUtMXc/FlAHWT3u4j98v4XukRZftEVbrVK6+zn6EaFQ==
+    -----END CERTIFICATE-----
+

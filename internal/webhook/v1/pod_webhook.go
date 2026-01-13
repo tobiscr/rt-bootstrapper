@@ -62,6 +62,13 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 		GetNsAnnotations: getNamespace,
 	}
 
+	// conditional defaulters
+
+	if cfg.ClusterTrustBundleMapping != nil {
+		d3 := BuildDefaulterAddClusterTrustBundle(*cfg.ClusterTrustBundleMapping)
+		defaulter.defaulters = append(defaulter.defaulters, d3)
+	}
+
 	return ctrl.NewWebhookManagedBy(mgr).For(&corev1.Pod{}).
 		WithDefaulter(&defaulter).
 		Complete()

@@ -3,6 +3,8 @@ package k8s
 import (
 	"fmt"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 func fixRegistry(registry string, overrides map[string]string) string {
@@ -37,4 +39,47 @@ func Contains(l map[string]string, r map[string]string) bool {
 		}
 	}
 	return true
+}
+
+type ClusterTrustBundleMapping struct {
+	ClusterTrustBundleName string `json:"clusterTrustBundleName" validate:"required"`
+	CertWritePath          string `json:"certWritePath" validate:"required"`
+	VolumeMountPath        string `json:"volumeMountPath" validate:"required"`
+	VolumeName             string `json:"volumeName" validate:"required"`
+}
+
+func (r ClusterTrustBundleMapping) ClusterTrustedBundle() corev1.Volume {
+	return corev1.Volume{
+		Name: r.VolumeName,
+		VolumeSource: corev1.VolumeSource{
+			Projected: &corev1.ProjectedVolumeSource{
+				Sources: []corev1.VolumeProjection{
+					{
+						ClusterTrustBundle: &corev1.ClusterTrustBundleProjection{
+							Name: &r.ClusterTrustBundleName,
+							Path: r.CertWritePath,
+						},
+					},
+				},
+			},
+		},
+	}
+
+}
+
+func (r ClusterTrustBundleMapping) VolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      r.VolumeName,
+		ReadOnly:  true,
+		MountPath: r.VolumeMountPath,
+	}
+}
+
+func (r ClusterTrustBundleMapping) KeysAndValues() []any {
+	return []any{
+		"name", r.VolumeName,
+		"signer", r.ClusterTrustBundleName,
+		"certWritePath", r.CertWritePath,
+		"volumeMountPath", r.VolumeMountPath,
+	}
 }
