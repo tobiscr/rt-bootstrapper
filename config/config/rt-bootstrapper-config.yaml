@@ -9,8 +9,8 @@ data:
         "replace.me": "localhost:5001",
         "example.com": "localhost:5002"
       },
-      "clusterTrustBundleMapping": {
-        "clusterTrustBundleName": "rt-bootstrapper-k3d.test:ctb:1",
+      "clusterTrustBundle": {
+        "name": "rt-bootstrapper-k3d.test:ctb:1",
         "certWritePath": "kube-apiserver-serving.pem",
         "volumeMountPath": "/etc/ssl/certs",
         "volumeName": "rt-bootstrapper-certs"

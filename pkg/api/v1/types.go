@@ -34,12 +34,12 @@ func (f NamespaceFeatures) Features(nsName string) map[string]string {
 }
 
 type Config struct {
-	Overrides                 map[string]string              `json:"overrides" validate:"required"`
-	ImagePullSecretName       string                         `json:"imagePullSecretName" validate:"required"`
-	ImagePullSecretNamespace  string                         `json:"imagePullSecretNamespace" validate:"required"`
-	SecretSyncInterval        Duration                       `json:"secretSyncInterval" validate:"required"`
-	ClusterTrustBundleMapping *k8s.ClusterTrustBundleMapping `json:"clusterTrustBundleMapping,omitempty"`
-	NamespaceFeatures         *NamespaceFeatures             `json:"namespaceFeatures,omitempty"`
+	Overrides                 map[string]string       `json:"overrides" validate:"required"`
+	ImagePullSecretName       string                  `json:"imagePullSecretName" validate:"required"`
+	ImagePullSecretNamespace  string                  `json:"imagePullSecretNamespace" validate:"required"`
+	SecretSyncInterval        Duration                `json:"secretSyncInterval" validate:"required"`
+	ClusterTrustBundleMapping *k8s.ClusterTrustBundle `json:"clusterTrustBundle,omitempty"`
+	NamespaceFeatures         *NamespaceFeatures      `json:"namespaceFeatures,omitempty"`
 }
 
 type Duration time.Duration

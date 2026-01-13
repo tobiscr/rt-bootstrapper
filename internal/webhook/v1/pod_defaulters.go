@@ -116,7 +116,7 @@ func BuildPodDefaulterAddImagePullSecrets(secretName string, nsf apiv1.Namespace
 	})
 }
 
-func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundleMapping, nsf apiv1.NamespaceFeatures) PodDefaulter {
+func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundle, nsf apiv1.NamespaceFeatures) PodDefaulter {
 	slog.Debug("building volume", mapping.KeysAndValues()...)
 
 	vol := mapping.ClusterTrustedBundle()
