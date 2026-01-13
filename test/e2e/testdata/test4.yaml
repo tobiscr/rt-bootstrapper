@@ -20,6 +20,8 @@ spec:
     spec:
       containers:
       - name: pause
-        image: k8s.gcr.io/pause:latest
+        image: localhost:5002/test-busybox:v1
+        command: [ "/bin/sh", "-c", "--" ]
+        args: [ "while true; do sleep 30; done;" ]
 
 
