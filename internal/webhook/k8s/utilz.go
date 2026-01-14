@@ -77,8 +77,8 @@ func (r ClusterTrustBundle) VolumeMount() corev1.VolumeMount {
 
 func (r ClusterTrustBundle) KeysAndValues() []any {
 	return []any{
-		"name", r.VolumeName,
-		"signer", r.Name,
+		"name", r.Name,
+		"volumeName", r.VolumeName,
 		"certWritePath", r.CertWritePath,
 		"volumeMountPath", r.VolumeMountPath,
 	}
