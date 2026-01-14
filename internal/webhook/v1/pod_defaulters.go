@@ -152,12 +152,9 @@ func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundle, nsf api
 		return result
 	}
 
-	handleVolumeMounts := func(modified bool, p *corev1.Pod) bool {
-		// stores information if any container was modified
-		for _, cs := range [][]corev1.Container{p.Spec.Containers} {
-			if handleVolumeMount(cs) {
-				modified = true
-			}
+	handleContainers := func(modified bool, p *corev1.Pod) bool {
+		if handleVolumeMount(p.Spec.Containers) {
+			modified = true
 		}
 
 		return modified
@@ -172,18 +169,18 @@ func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundle, nsf api
 			// volume does not exist, add it
 			p.Spec.Volumes = append(p.Spec.Volumes, vol)
 			slog.Debug("volume added")
-			return handleVolumeMounts(true, p)
+			return handleContainers(true, p)
 		}
 
 		if reflect.DeepEqual(p.Spec.Volumes[index], vol) {
 			slog.Debug("volume already added, nothing to do")
-			return handleVolumeMounts(false, p)
+			return handleContainers(false, p)
 		}
 
 		p.Spec.Volumes[index] = vol
 		slog.Debug("volume replaced")
 
-		return handleVolumeMounts(true, p)
+		return handleContainers(true, p)
 	}
 
 	return defaultPod(handleClusterTrustBundle, updateOpts{
