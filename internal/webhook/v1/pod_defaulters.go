@@ -154,7 +154,7 @@ func BuildDefaulterAddClusterTrustBundle(mapping k8s.ClusterTrustBundle, nsf api
 
 	handleVolumeMounts := func(modified bool, p *corev1.Pod) bool {
 		// stores information if any container was modified
-		for _, cs := range [][]corev1.Container{p.Spec.Containers, p.Spec.InitContainers} {
+		for _, cs := range [][]corev1.Container{p.Spec.Containers} {
 			if handleVolumeMount(cs) {
 				modified = true
 			}
