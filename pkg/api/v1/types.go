@@ -13,17 +13,33 @@ import (
 const (
 	AnnotationAlterImgRegistry      = "rt-cfg.kyma-project.io/alter-img-registry"
 	AnnotationSetPullSecret         = "rt-cfg.kyma-project.io/add-img-pull-secret"
-	AnnotationAddClusterTrustBundle = "rt-cfg.kyma-project.io/add-add-cluster-trust-bundle"
+	AnnotationAddClusterTrustBundle = "rt-cfg.kyma-project.io/add-cluster-trust-bundle"
 	AnnotationDefaulted             = "rt-bootstrapper.kyma-project.io/defaulted"
 	FiledManager                    = "rt-bootstrapper"
 )
 
+type NamespaceFeatures map[string][]string
+
+func (f NamespaceFeatures) Features(nsName string) map[string]string {
+	featureList, found := f[nsName]
+	if !found {
+		return map[string]string{}
+	}
+
+	result := make(map[string]string, len(featureList))
+	for _, feature := range featureList {
+		result[feature] = "true"
+	}
+	return result
+}
+
 type Config struct {
-	Overrides                 map[string]string              `json:"overrides" validate:"required"`
-	ImagePullSecretName       string                         `json:"imagePullSecretName" validate:"required"`
-	ImagePullSecretNamespace  string                         `json:"imagePullSecretNamespace" validate:"required"`
-	SecretSyncInterval        Duration                       `json:"secretSyncInterval" validate:"required"`
-	ClusterTrustBundleMapping *k8s.ClusterTrustBundleMapping `json:"clusterTrustBundleMapping,omitempty"`
+	Overrides                 map[string]string       `json:"overrides" validate:"required"`
+	ImagePullSecretName       string                  `json:"imagePullSecretName" validate:"required"`
+	ImagePullSecretNamespace  string                  `json:"imagePullSecretNamespace" validate:"required"`
+	SecretSyncInterval        Duration                `json:"secretSyncInterval" validate:"required"`
+	ClusterTrustBundleMapping *k8s.ClusterTrustBundle `json:"clusterTrustBundle,omitempty"`
+	NamespaceFeatures         *NamespaceFeatures      `json:"namespaceFeatures,omitempty"`
 }
 
 type Duration time.Duration

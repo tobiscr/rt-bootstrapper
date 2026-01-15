@@ -34,8 +34,14 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 
 	slog.Info("setting up webhook", "cfg", cfg)
 
-	d1 := BuildPodDefaulterAddImagePullSecrets(cfg.ImagePullSecretName)
-	d2 := BuildPodDefaulterAlterImgRegistry(cfg.Overrides)
+	nsf := apiv1.NamespaceFeatures{}
+	if cfg.NamespaceFeatures != nil {
+		nsf = *cfg.NamespaceFeatures
+		slog.Info("default features configuration found", "default-features", nsf.Features)
+	}
+
+	d1 := BuildPodDefaulterAddImagePullSecrets(cfg.ImagePullSecretName, nsf)
+	d2 := BuildPodDefaulterAlterImgRegistry(cfg.Overrides, nsf)
 
 	getNamespace := func(ctx context.Context, name string) (map[string]string, error) {
 		var ns corev1.Namespace
@@ -65,7 +71,7 @@ func SetupPodWebhookWithManager(mgr ctrl.Manager, cfg *apiv1.Config) error {
 	// conditional defaulters
 
 	if cfg.ClusterTrustBundleMapping != nil {
-		d3 := BuildDefaulterAddClusterTrustBundle(*cfg.ClusterTrustBundleMapping)
+		d3 := BuildDefaulterAddClusterTrustBundle(*cfg.ClusterTrustBundleMapping, nsf)
 		defaulter.defaulters = append(defaulter.defaulters, d3)
 	}
 

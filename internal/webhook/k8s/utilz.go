@@ -41,14 +41,14 @@ func Contains(l map[string]string, r map[string]string) bool {
 	return true
 }
 
-type ClusterTrustBundleMapping struct {
-	ClusterTrustBundleName string `json:"clusterTrustBundleName" validate:"required"`
-	CertWritePath          string `json:"certWritePath" validate:"required"`
-	VolumeMountPath        string `json:"volumeMountPath" validate:"required"`
-	VolumeName             string `json:"volumeName" validate:"required"`
+type ClusterTrustBundle struct {
+	Name            string `json:"name" validate:"required"`
+	CertWritePath   string `json:"certWritePath" validate:"required"`
+	VolumeMountPath string `json:"volumeMountPath" validate:"required"`
+	VolumeName      string `json:"volumeName" validate:"required"`
 }
 
-func (r ClusterTrustBundleMapping) ClusterTrustedBundle() corev1.Volume {
+func (r ClusterTrustBundle) ClusterTrustedBundle() corev1.Volume {
 	return corev1.Volume{
 		Name: r.VolumeName,
 		VolumeSource: corev1.VolumeSource{
@@ -56,7 +56,7 @@ func (r ClusterTrustBundleMapping) ClusterTrustedBundle() corev1.Volume {
 				Sources: []corev1.VolumeProjection{
 					{
 						ClusterTrustBundle: &corev1.ClusterTrustBundleProjection{
-							Name: &r.ClusterTrustBundleName,
+							Name: &r.Name,
 							Path: r.CertWritePath,
 						},
 					},
@@ -67,7 +67,7 @@ func (r ClusterTrustBundleMapping) ClusterTrustedBundle() corev1.Volume {
 
 }
 
-func (r ClusterTrustBundleMapping) VolumeMount() corev1.VolumeMount {
+func (r ClusterTrustBundle) VolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{
 		Name:      r.VolumeName,
 		ReadOnly:  true,
@@ -75,10 +75,10 @@ func (r ClusterTrustBundleMapping) VolumeMount() corev1.VolumeMount {
 	}
 }
 
-func (r ClusterTrustBundleMapping) KeysAndValues() []any {
+func (r ClusterTrustBundle) KeysAndValues() []any {
 	return []any{
-		"name", r.VolumeName,
-		"signer", r.ClusterTrustBundleName,
+		"name", r.Name,
+		"volumeName", r.VolumeName,
 		"certWritePath", r.CertWritePath,
 		"volumeMountPath", r.VolumeMountPath,
 	}
