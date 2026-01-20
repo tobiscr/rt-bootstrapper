@@ -3,29 +3,31 @@
 
 
 ## Overview
-Some Kyma landscapes required individual infrastructure setups (e.g. if the landscape runs in a restricted context or market).  This can be a private container registry,  certificate based access mechanisms or other special configurations which let them differ from common Kyma landscapes.
+Kyma landscapes can require individual infrastructure setups (e.g. if the landscape runs in a restricted context or market).  This could be a private container registry, a certificate based access mechanisms or other special configurations which make such Kyma landscape unique.
 
-Kyma modules are usually not aware about different landscapes and, without any adjustments, would not fully work in different landscape setups.
+Kyma modules are usually not aware about differences between landscapes and, without any adjustments, they could be functionally limited or even incompatible and not run in such landscapes.
 
 To solve this problem, the Runtime Bootstrapper is responsible to apply landscape specific configurations to Kyma modules, respectively to the workloads installed by the modules.
 
-The Runtime Boostrapper is implemented as manipulated webhook which intercepts requests which create or update Pods. It extends or rewrites parts of their Pod manifests to make them compatible with the current landscape.
+The Runtime Boostrapper is implemented as manipulating webhook which intercepts create or update requests for Pods before they get applied by Kubernetes `kubelet`. It extends or rewrites parts of the Pod manifests to make them compatible with the landscape.
 
-*Only Pods are intercepted by the webhook! Other resources (like `Deployment`, `DeamonSet` or `StatefulSet` etc.) are ignored.*
+> **Hint**: Only Pods are intercepted by the webhook! Other resources (like `Deployment`, `DaemonSet` or `StatefulSet` etc.) are ignored.
 
 ## Pod Manipulations
 
 The Runtime Bootstrapper modifies a Pod only if one of the following conditions is met:
 
-1. The Pod runs within a namespace which is listed in the Webhook's default configuration. All pods in these namespaces are automatically intercepted and modified. This option is usually only used for namespaces which are Kyma managed (e.g. `kyma-system`, `istio-system` etc.)
-2. The namespace contains an annotation which indicates that all Pods within the namespace should be intercepted
-2. The Pod itself is annotated to get intercepted by the webhook
+1. The Pod runs within a namespace which is listed in the Webhook's default configuration. All pods in such namespaces are automatically intercepted and modified. This option is primarily used for namespaces which are Kyma managed (e.g. `kyma-system`, `istio-system` etc.)
+2. The namespace contains an annotation which indicates that Pods within the namespace should be intercepted.
+3. The Pod itself is annotated to get intercepted by the webhook.
+
+The next section describes the manipulations and their corresponding annotation.
 
 ### Applied Manipulations
 
 The following table gives an overview of the different manipulations supported by the Runtime Bootstrapper.
 
-THe column `Opt-In` contains the annotation which has to be added to an `Namespace` or `Pod` manifest to enable the manipulation for it (only required if the Pod is running in a Namespace which is not already per default monitored by the webhook).
+THe column `Opt-In Annotation` contains the annotation which has to be added to an `Namespace` or `Pod`  to enable the webhook manipulation for it (only required if the Pod is **not** running in a Namespace which is per default monitored by the webhook).
 
 |Name|Purpose|Applied Manipulation|Opt-In Annotation|
 |--|--|--|--|
@@ -36,10 +38,16 @@ THe column `Opt-In` contains the annotation which has to be added to an `Namespa
 
 *Note: if a Pod was manpulated by the webhook, the pod is annotated with `rt-bootstrapper.kyma-project.io/defaulted: "true"`*
 
+**Example:**
+
+> TODO: add example of processed pod manifest
+
 
 ## High Level Flow
 
 ![High Level Flow](./assets/flow.png)
+
+> TODO: describe flow + involved components
 
 ## Useful Links (Optional)
 * [Architectural decision](../contributor/architectural-decisions.md)
