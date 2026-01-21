@@ -38,7 +38,7 @@ THe column `Opt-In Annotation` contains the annotation which has to be added to 
 
 *Note: if a Pod was manpulated by the webhook, the pod is annotated with `rt-bootstrapper.kyma-project.io/defaulted: "true"`*
 
-**Example:**
+### Example
 
 Below a Pod manifest before it was intercepted.
 
@@ -117,7 +117,18 @@ spec:
 
 ![High Level Flow](./assets/flow.png)
 
-> TODO: describe flow + involved components
+1. KEB (Kyma Environment Broker) creates a `Runtime` CR (it represents a Kyma runtime instance).
+2. KIM (Kyma Infrastructure Manager) watches all changes of `Runtime` CRs.
+3. When a new `Runtime` CR gets created, KIM creates a new Kyma runtime (based on Gardener Cluster).
+4. After the Kyma runtime is ready, the Runtime Bootstrapper Webhook is automatically installed by KIM.
+5. When the webhook is running, KIM marks the `Runtime` CR to be ready.
+6. KEB watchers status changes of `Runtime` CRs.
+7. As next steps, after the Kyma runtime is ready, KEB creates a `Kyma` CR (represents a Kyma installation on a Kyma runtime).
+8. KLM (Kyma Lifecycle Manager) watches `Kyma` CR and reacts on new created entities.
+9. KLM starts deploying Kyma modules via the API server.
+10. The API server calls the manipulating webhooks to intercept requests.
+11. The manipulated request gets deployed on the Kyma runtime.
+12. After all Kyma modules were successfully installed, KLM marks the `Kyma` CR as ready.
 
 ## Useful Links (Optional)
 * [Architectural decision](../contributor/architectural-decisions.md)
