@@ -26,7 +26,7 @@ The Runtime Bootstrapper modifies a Pod only if one of the following conditions 
 
 The table below provides an overview of the different manipulations supported by the Runtime Bootstrapper.
 
-THe column `Opt-In Annotation` contains the annotation which has to be added to an `Namespace` or `Pod`  to enable the webhook manipulation for it (only required if the Pod is **not** running in a Namespace which is per default monitored by the webhook).
+The column `Opt-In Annotation` contains the annotation which has to be added to an `Namespace` or `Pod`  to enable the webhook manipulation for it (only required if the Pod is **not** running in a Namespace which is per default monitored by the webhook).
 
 | Name | Purpose  | Applied Manipulation  | Modified Manifest Field | Opt-In Annotation |
 |--|--|--|--|--|
