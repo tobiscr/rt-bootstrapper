@@ -35,7 +35,7 @@ THe column `Opt-In Annotation` contains the annotation which has to be added to 
 | FIPS Mode Enablement| Set an environment variable in the Pod to enable FIPS mode. | Add environment variable `KYMA_FIPS_MODE_ENABLED`. | Append key-value array `.spec.containers[*].env[]` with `KYMA_FIPS_MODE_ENABLED=true`   | `rt-cfg.kyma-project.io/set-fips-mode: "true"`     |
 | Mount Cluster Trust Bundle Volume | Mount a certificate (stored as `ClusterTrustBundle`) as a projected volume into the container under the path `/etc/ssl/certs` (includes init-containers).| Mount a projected `volume` from `ClusterTrustBundle` to each container in the Pod under path `/etc/ssl/certs`. | 1. Add projected volume `rt-bootstrapper-certs` to `.spec.volumes[]`<br/>2. Mount this volume into each container under the mount path `/etc/ssl/certs` by extending the array `.spec.containers[*].volumeMounts` | `rt-cfg.kyma-project.io/add-cluster-trust-bundle: "true"` |
 
-*Note: if a Pod was manpulated by the webhook, the pod is annotated with `rt-bootstrapper.kyma-project.io/defaulted: "true"`*
+>**Note**: if a Pod was manpulated by the webhook, the pod is annotated with `rt-bootstrapper.kyma-project.io/defaulted: "true"`.
 
 ### Example
 
