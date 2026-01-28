@@ -16,7 +16,6 @@ Runtime Bootstrapper is implemented as a mutating webhook that intercepts `creat
 
 ## Pod Manipulations
 
-
 Runtime Bootstrapper modifies a Pod only if one of the following conditions is met:
 
 1. The Pod runs within a namespace listed in the webhook's default configuration. All Pods in such namespaces are automatically intercepted and modified. This option is primarily used for Kyma-managed namespaces (e.g., `kyma-system`, `istio-system`, etc.).
