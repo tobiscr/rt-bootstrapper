@@ -153,5 +153,5 @@ spec:
 12. **Kyma CR Readiness**:  
     Once all Kyma modules are successfully installed, KLM marks the Kyma CR as `Ready`.
 
-## Useful Links
+## Related Information
 * [Architectural decision](../contributor/architectural-decisions.md)
