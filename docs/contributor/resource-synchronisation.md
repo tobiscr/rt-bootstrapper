@@ -66,6 +66,8 @@ This allows incremental rollout and testing of the controller loop without impac
 
 In the future design, the controller loop will no longer rely on labeling `Runtime` CR objects to trigger reconciliation. Instead, it will directly propagate configuration changes to the runtimes without any Kyma Infrastructure involvement.
 
+![Runtime Bootstrapper Architecture](./assets/new-arch-rt-boostrapper.drawio.svg)
+
 ### Planned Behavior
 
 When a watched resource changes:

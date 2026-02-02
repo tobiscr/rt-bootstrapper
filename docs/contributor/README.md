@@ -115,7 +115,7 @@ spec:
 
 ## High Level Flow
 
-![High Level Flow](./assets/flow.png)
+![High Level Flow](./assets/flow-manipulating-webhook.drawio.svg)
 
 1. **Runtime Provisioning Initiation**:  
    Kyma Environment Broker (KEB) creates a Runtime custom resource (CR), which represents a Kyma runtime instance.
