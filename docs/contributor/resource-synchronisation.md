@@ -93,7 +93,7 @@ When a watched resource changes:
 
 
 
-## **5. Migration Considerations**
+## Migration Considerations
 
 Transitioning from the interim to the long‑term solution requires:
 
