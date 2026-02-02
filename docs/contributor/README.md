@@ -153,5 +153,11 @@ spec:
 12. **Kyma CR Readiness**:  
     Once all Kyma modules are successfully installed, KLM marks the Kyma CR as `Ready`.
 
+
+## Resource Synchronization
+
+The synchronization of shared resources (e.g. Pull-Secret, ClusterTrustBundle or the webhook configuration) is handled by a dedicated controller loop. Details are described in [the resource synchronizer documentation](./resource-synchronisation.md).
+
 ## Related Information
 * [Architectural decision](./architectural-decisions.md)
+
