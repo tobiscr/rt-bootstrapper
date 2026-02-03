@@ -156,7 +156,7 @@ spec:
 
 ## Resource Synchronization
 
-The synchronization of shared resources (e.g. Pull-Secret, ClusterTrustBundle or the webhook configuration) is handled by a dedicated controller loop. Details are described in [the resource synchronizer documentation](./resource-synchronisation.md).
+A dedicated controller loop handles the synchronization of shared resources (for example, pull secret, `ClusterTrustBundle`, or webhook configuration). For details, see [the resource synchronizer documentation](./resource-synchronisation.md).
 
 ## Related Information
 * [Architectural decision](./architectural-decisions.md)
