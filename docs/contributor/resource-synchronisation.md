@@ -27,7 +27,7 @@ The controller loop monitors the following Kubernetes objects:
 
 A custom resource (CR) representing a managed runtime instance.
 
-The infrastructure manager component reacts to `Runtime` CR labels to determine if a runtime requires reconciliation.
+The Kyma Infrastructure Manager component reacts to `Runtime` CR labels to determine if a runtime requires reconciliation.
 
 
 ## Current Behavior (Interim Solution)
@@ -46,9 +46,9 @@ Upon detecting a change, the controller loop performs the following steps:
 1. Identifies all affected `Runtime` CR objects.
 2. Applies or updates a specific label (for example, [`operator.kyma-project.io/force-patch-reconciliation=true`](https://github.com/kyma-project/kyma-infrastructure-manager/blob/c1d2f48a9b446b3374528278b46ea9be23ff622a/pkg/reconciler/annotations_utils.go#L4C32-L4C83)) on each `Runtime` CR.
 3. The Kyma Infrastructure Manager component observes this label change.
-4. The infrastructure manager reconciles the corresponding runtimes to ensure they receive the updated configuration.
+4. The Kyma Infrastructure Manager reconciles the corresponding runtimes to ensure they receive the updated configuration.
 
-This mechanism uses the `Runtime` CR label as a signaling channel between the controller loop and the infrastructure manager.
+This mechanism uses the `Runtime` CR label as a signaling channel between the controller loop and the Kyma Infrastructure Manager.
 
 
 ### Rationale for the Interim Approach
@@ -56,7 +56,7 @@ This mechanism uses the `Runtime` CR label as a signaling channel between the co
 The labeling strategy provides a lightweight and low‑risk integration path with the following advantages:
 
 * No direct modification of runtime resources is required.
-* Existing reconciliation logic in the infrastructure manager remains unchanged.
+* Existing reconciliation logic in the Kyma Infrastructure Manager remains unchanged.
 * The controller loop only signals intent rather than performing the full synchronization.
 
 This allows incremental rollout and testing of the controller loop without impacting runtime stability.
@@ -108,7 +108,7 @@ Transitioning from the interim to the long‑term solution requires the followin
 
 ## Summary
 
-The current system uses a Kubernetes controller loop to detect changes in key configuration resources and signals the infrastructure manager by labeling `Runtime` CR objects. This approach serves as a temporary mechanism to ensure runtimes are reconciled when configuration changes occur.
+The current system uses a Kubernetes controller loop to detect changes in key configuration resources and signals the Kyma Infrastructure Manager by labeling `Runtime` CR objects. This approach serves as a temporary mechanism to ensure runtimes are reconciled when configuration changes occur.
 
 The long‑term solution will perform the following actions:
 
