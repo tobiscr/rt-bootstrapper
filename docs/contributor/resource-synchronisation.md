@@ -1,7 +1,7 @@
 
 # Runtime Configuration Synchronization Through Controller Loop
 
-Runtime Boostrapper synchronises several resources between Kyma Control Plane (KCP) and Kyma runtimes. Some webhook features require specific resources (for example, a pull secret to access a private container registry, `ClusterTrustBundle` to interact with BTP backend services, etc.).
+Runtime Boostrapper synchronises several resources between Kyma Control Plane (KCP) and Kyma runtimes. Some webhook features require specific resources to work (for example, a pull secret to access a private container registry, `ClusterTrustBundle` to interact with BTP backend services, etc.).
 
 The following described behavior represents an interim solution. A long‑term architecture is planned in which the controller loop will directly synchronize configuration data to the runtimes without relying on indirect signaling.
 
