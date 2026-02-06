@@ -72,10 +72,10 @@ In the future design, the controller loop will no longer rely on labeling `Runti
 
 When a watched resource changes, the following actions will take place:
 
-1. The controller loop will use a dedicated CR to manage the lifecycle of the Runtime Bootstrapper:
-    1. A newly created CR will install the Runtime Boostrapper on a Kyma runtime.
-    2. Status applied to the Runtime Bootstrapper will be reflected in the CR status.
-    3. Deletion of the CR will trigger the undeployment of the Runtime Bootstrapper from the Kyma runtime.
+1. The controller loop will use a dedicated CR to manage the lifecycle of Runtime Bootstrapper:
+    1. A newly created CR will install Runtime Boostrapper on a Kyma runtime.
+    2. The status applied to Runtime Bootstrapper will be reflected in the CR status.
+    3. Deletion of the CR will trigger the undeployment of Runtime Bootstrapper from the Kyma runtime.
 2. The controller loop retrieves the updated value (for example, new pull secret, updated trust bundle, modified webhook configuration).
 3. The controller loop writes the updated data directly into the runtime’s configuration or associated Kubernetes objects.
 4. KIM no longer needs to detect labels or perform reconciliation for these specific updates.
