@@ -56,7 +56,7 @@ This mechanism uses the `Runtime` CR label as a signaling channel between the co
 The labeling strategy provides a lightweight and low‑risk integration path with the following advantages:
 
 * No direct modification of runtime resources is required.
-* Existing reconciliation logic in the Kyma Infrastructure Manager remains unchanged.
+* Existing reconciliation logic in KIM remains unchanged.
 * The controller loop only signals intent rather than performing the full synchronization.
 
 This allows incremental rollout and testing of the controller loop without impacting runtime stability.
