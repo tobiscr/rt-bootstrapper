@@ -98,7 +98,7 @@ When a watched resource changes, the following actions will take place:
 Transitioning from the interim to the long‑term solution requires the following:
 
 * Clear separation and decoupling between KIM and the Runtime Bootstrapper components.
-* Existing code that resides in KIM can be refactored and moved to the Runtime Bootstrapper, which simplifies the KIM codebase and reduces the number of reconciliation steps.
+* Existing code that resides in KIM can be refactored and moved to Runtime Bootstrapper, which simplifies the KIM codebase and reduces the number of reconciliation steps.
 * Updating the controller loop to implement direct synchronization logic.
 * Ensuring KIM no longer depends on RuntimeCR label changes for these configuration types.
 * Introducing versioning or compatibility checks to avoid partial updates.
