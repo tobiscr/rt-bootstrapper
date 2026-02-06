@@ -45,7 +45,7 @@ Upon detecting a change, the controller loop performs the following steps:
 
 1. Identifies all affected `Runtime` CR objects.
 2. Applies or updates a specific label (for example, [`operator.kyma-project.io/force-patch-reconciliation=true`](https://github.com/kyma-project/kyma-infrastructure-manager/blob/c1d2f48a9b446b3374528278b46ea9be23ff622a/pkg/reconciler/annotations_utils.go#L4C32-L4C83)) on each `Runtime` CR.
-3. The Kyma Infrastructure Manager component observes this label change.
+3. KIM observes this label change.
 4. The Kyma Infrastructure Manager reconciles the corresponding runtimes to ensure they receive the updated configuration.
 
 This mechanism uses the `Runtime` CR label as a signaling channel between the controller loop and the Kyma Infrastructure Manager.
