@@ -87,7 +87,8 @@ When a watched resource changes, the following actions will take place:
 * Improved consistency: Ensures runtimes always reflect the latest cluster configuration.
 * Clearer separation of responsibilities:
   * Controller loop handles configuration propagation.
-  * Controller manages lifecycle of the Runtime Boostrapper
+  * The controller loop handles configuration propagation.
+  * The controller manages the lifecycle of Runtime Boostrapper
   * KIM focuses on lifecycle management of Kyma runtimes.
   * KIM is unaware of the Runtime Bootstrapper.
 
