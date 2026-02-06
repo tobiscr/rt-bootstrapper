@@ -90,7 +90,7 @@ When a watched resource changes, the following actions will take place:
   * The controller loop handles configuration propagation.
   * The controller manages the lifecycle of Runtime Boostrapper
   * KIM focuses on lifecycle management of Kyma runtimes.
-  * KIM is unaware of the Runtime Bootstrapper.
+  * KIM is unaware of Runtime Bootstrapper.
 
 
 
