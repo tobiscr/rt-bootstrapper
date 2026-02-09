@@ -109,7 +109,7 @@ Transitioning from the interim to the long‑term solution requires the followin
 
 ## Summary
 
-The current system uses a Kubernetes controller loop to detect changes in key configuration resources and signals the Kyma Infrastructure Manager by labeling `Runtime` CR objects. This approach serves as a temporary mechanism to ensure runtimes are reconciled when configuration changes occur.
+The current system uses a Kubernetes controller loop to detect changes in key configuration resources and signals KIM by labeling `Runtime` CR objects. This approach serves as a temporary mechanism to ensure runtimes are reconciled when configuration changes occur.
 
 The long‑term solution will perform the following actions:
 
