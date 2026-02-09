@@ -1,6 +1,6 @@
 module github.com/kyma-project/rt-bootstrapper
 
-go 1.25.0
+go 1.25.7
 
 require (
 	github.com/go-logr/logr v1.4.3
